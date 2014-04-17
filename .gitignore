@@ -1,1 +1,5 @@
-/deine mudda witze.txt
+*.*
+!*.cpp
+!*.hpp
+!CMakeLists.txt
+!.gitignore
