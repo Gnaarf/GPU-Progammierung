@@ -1,6 +1,23 @@
+# create a don't-ignore list (a list of file types that should be tracked by git)
+# please do not use the '**/' pattern, because it "is available in Git since version 1.8.2"
+#
+# 0 ignore -> don't ignore list
+# 1 don't ignore c++ files
+
+### 0 ignore -> don't ignore list ###
+# ignore everything
 *.*
+
+### 1 C++ files ###
+# don't ignore c++ files
 !*.cpp
 !*.hpp
 !*.h
+
+### 2 CMakeLists.txt ##
+# don't ignore CMakeLists.txt files
 !CMakeLists.txt
+
+### 3 .gitignore ###
+# don't ignore .gitignore files
 !.gitignore
