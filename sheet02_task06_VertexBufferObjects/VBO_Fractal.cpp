@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cstdio>
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
@@ -13,7 +14,7 @@
 
 using namespace std;
 
-float center[3] = {0.0f, 0.5f, 0.0f}; 
+float center[3] = {0.0f, 0.5f, 0.0f};
 
 #define PI 3.141592f
 
@@ -35,18 +36,18 @@ bool useVBO = false;
 
 // Window size
 
-int width = 800;       
+int width = 800;
 int height = 800;
 
 // view parameters
 
-GLfloat viewPosition[4] = {0.0f, 5.0f, 8.0f, 1.0f};  
-GLfloat viewDirection[4] = {-0.0f, -5.0f, -8.0f, 0.0f};  
+GLfloat viewPosition[4] = {0.0f, 5.0f, 8.0f, 1.0f};
+GLfloat viewDirection[4] = {-0.0f, -5.0f, -8.0f, 0.0f};
 GLfloat viewAngle = 40.0f;
 GLfloat viewNear = 0.2f;
 GLfloat viewFar = 100000.0f;
 
-GLfloat lightPosition[4] = {0, 0, 1 ,0};  
+GLfloat lightPosition[4] = {0, 0, 1 ,0};
 
 vector<int> indices;
 vector<Vector> positions;
@@ -70,7 +71,7 @@ int maxLevel = 8;
 
 void generateTriangle(Vector p0, Vector p1, Vector p2)
 {
-	Triangle tri = Triangle(p0, p1, p2); 
+	Triangle tri = Triangle(p0, p1, p2);
 	positions.push_back(p0);
 	positions.push_back(p1);
 	positions.push_back(p2);
@@ -88,7 +89,7 @@ void generateTriangle(Vector p0, Vector p1, Vector p2)
 }
 
 void generateTetraeders(Vector p0, Vector p1, Vector p2, Vector p3, int level)
-{	
+{
 	if (level == maxLevel)
 		return;
 
@@ -103,7 +104,7 @@ void generateTetraeders(Vector p0, Vector p1, Vector p2, Vector p3, int level)
 	Vector e3 = p3 - p0;
 	Vector e4 = p3 - p2;
 	Vector e5 = p3 - p1;
-	
+
 	Vector newP0, newP1, newP2, newP3;
 
 	newP0 = p0;
@@ -142,12 +143,12 @@ void generateGeometryVertexBuffer()
 	// - Generieren eines Buffer Handles
 	// - Binden des Buffers (Target = GL_ARRAY_BUFFER)
 	// - Buffer Daten in den VRAM kopieren (Usage = GL_STATIC_DRAW)
-	// - Buffer nicht mehr binden (stattdessen eine 0 binden).	
-	
+	// - Buffer nicht mehr binden (stattdessen eine 0 binden).
+
 	// TODO: Erzeugen eines Vertex Buffer Objects für die Normalen.
-	
+
 	// TODO: Erzeugen eines Indexbuffers. Dies funktioniert genauso, wie die Erzeugung eines VBOs (Hinweis: Target = GL_ELEMENT_ARRAY_BUFFER).
-	
+
 	// TODO: Erzeugen eines Vertex Array Objects (VAOs).
 	// VAOs werden genutzt um der GPU mitzuteilen, von welchen VBOs die Daten für das Rendering genommen werden sollen.
 	// - Generieren eines Vertex Array Handles
@@ -163,7 +164,7 @@ void generateGeometryVertexBuffer()
 		// wieder glVertexAttribPointer nutzen..
 		// Aufräumen: Den Wert '0' als Vertex Buffer Object binden. (kein VBO mehr aktiv)
 		// Zuletzt muss mitgeteilt werden, welche Vertex-Attribut Indices genutzt werden sollen. Dies geschieht mit glEnableVertexAttribArray.
-	// Aufräumen: Unbinden des Vertex Array Objects (eine 0 binden).	
+	// Aufräumen: Unbinden des Vertex Array Objects (eine 0 binden).
 }
 
 
@@ -171,13 +172,13 @@ void drawGeometryVertexBuffer()
 {
 	// TODO: Binden des VAOs. (Die GPU weiß nun, wo sie die Geometriedaten herzuholen hat.)
 	// TODO: Index-Buffer binden.
-	
-	// TODO: mit glDrawElements die Triangles rendern. 
+
+	// TODO: mit glDrawElements die Triangles rendern.
 	// Hinweis: Der Type-Parameter definiert den im Index Buffer verwendeten Datentyp.
 	//   Der letzte Parameter dieses DrawCalls ist NULL, da der Index-Buffer von Beginn an gelesen werden soll.
 	unsigned int numTriangles = positions.size();
-	
-	// TODO: Unbinden von VAO und Index-Buffer	
+
+	// TODO: Unbinden von VAO und Index-Buffer
 }
 
 // calc the view position and direction from theta/phi coordinates
@@ -186,7 +187,7 @@ void calcViewerCamera(float theta, float phi, float r)
     float x = r * sin(theta) * cos(phi);
     float y = r * cos(theta);
     float z = r * sin(theta) * sin(phi);
- 
+
 	viewPosition[0] = center[0] + x;
 	viewPosition[1] = center[1] + y;
 	viewPosition[2] = center[2] + z;
@@ -206,12 +207,12 @@ void display()
 
 	// now render from camera view
 	glLoadIdentity();
- 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-  				
+	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	gluLookAt(viewPosition[0], viewPosition[1], viewPosition[2],
-			  viewPosition[0] + viewDirection[0], viewPosition[1] + viewDirection[1], viewPosition[2] + viewDirection[2], 
+			  viewPosition[0] + viewDirection[0], viewPosition[1] + viewDirection[1], viewPosition[2] + viewDirection[2],
 			  0, 1, 0);
 
 
@@ -251,14 +252,14 @@ void mouseMotion(int x, int y)
 {
 	float deltaX = x - oldX;
 	float deltaY = y - oldY;
-	
+
 	if (motionState == ROTATE) {
 		theta -= 0.002f * deltaY;
 
 		if (theta < 0.002f) theta = 0.002f;
 		else if (theta > PI - 0.002f) theta = PI - 0.002f;
 
-		phi += 0.002f * deltaX;	
+		phi += 0.002f * deltaX;
 		if (phi < 0) phi += 2*PI;
 		else if (phi > 2*PI) phi -= 2*PI;
 	}
@@ -304,8 +305,8 @@ void initGL()
 	// init some GL state variables
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
-	glEnable(GL_LIGHTING);               
-	glEnable(GL_LIGHT0);                 
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
 
 	glViewport(0,0,width,height);
 
@@ -333,7 +334,7 @@ int main(int argc, char** argv)
 	if(glewInit() != GLEW_OK)
 	   cout << "GLEW init failed!" << endl;
 
-	// Register GLUT callback functions   
+	// Register GLUT callback functions
 	glutDisplayFunc(display);
 	glutIdleFunc(display);
 	// glutSpecialFunc(special);
