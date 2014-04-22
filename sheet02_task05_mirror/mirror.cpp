@@ -37,6 +37,7 @@ void drawScene()
 // Spiegel zeichen: Ein Viereck
 void drawMirror()
 {
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mirrorColor);
 	glBegin(GL_QUADS);
 	glVertex3f(1,0,1);
 	glVertex3f(1,0,-1);
@@ -64,19 +65,38 @@ void display(void)
 
 	// *** Spiegel zeichnen, so dass Spiegelobjekt im Stencil Buffer eingetragen wird
 	// *** Framebuffer dabei auf Read-Only setzen, Depth Buffer deaktivieren, Stencil Test aktivieren
-
+	glClear(GL_STENCIL_BUFFER_BIT);
+	glStencilFunc(GL_ALWAYS,1,1);
+	glStencilOp(GL_REPLACE,GL_REPLACE,GL_REPLACE);
+	glEnable(GL_STENCIL_TEST);
+	glDisable(GL_DEPTH_TEST);
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	drawMirror();
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	//glDisable(GL_STENCIL_TEST);
+	glEnable(GL_DEPTH_TEST);
 
 	// *** Gespiegelte Szene zeichnen, Stencil Buffer so einstellen, dass nur bei
 	// *** einem Eintrag 1 im Stencil Buffer das entsprechende Pixel im Framebuffer 
 	// *** gezeichnet wird, der Inhalt vom Stencil Buffer soll unveraendert bleiben 
 	// *** Depth Buffer wieder anmachen, Framebuffer Maskierung deaktivieren
 	// *** Was macht man mit der Lichtquelle ?
+	glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
+	glStencilFunc(GL_EQUAL,1,1);
+	
+	glPushMatrix();
+	glScalef(1,-1,1);
+	//float lightpos2[4] = {lightPos[0],lightPos[1],lightPos[2],lightPos[3]};
+	glLightfv(GL_LIGHT0,GL_POSITION, lightPos);
+	drawScene();
+	glPopMatrix();
 
-
+	glDisable(GL_STENCIL_TEST);
 	// *** Stencil Test deaktivieren, Spiegelung der Szene rueckgaengig machen
 	// *** Spiegelobjekt mit diffuser Farbe mirrorColor zeichen
 	// *** Blending aktivieren und ueber Alpha-Kanal mit Spiegelbild zusammenrechnen
-
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 	drawMirror();
 	glDisable(GL_BLEND);
 
@@ -150,7 +170,6 @@ int main(int argc, char **argv)
 
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
-
 	glEnable(GL_DEPTH_TEST);
 
 	glViewport(0,0,width,height);					
