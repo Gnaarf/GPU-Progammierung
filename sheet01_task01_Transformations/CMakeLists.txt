@@ -1,4 +1,4 @@
-project(sheet01_task01_mirror)
+project(sheet01_task01_Transformations)
 cmake_minimum_required(VERSION 2.8)
 
 set(SRC_LIST transformations.cpp)

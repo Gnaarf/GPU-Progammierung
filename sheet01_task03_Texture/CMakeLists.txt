@@ -1,4 +1,4 @@
-project(sheet01_task03_mirror)
+project(sheet01_task03_Texture)
 cmake_minimum_required(VERSION 2.8)
 
 set(SRC_LIST Texture.cpp)

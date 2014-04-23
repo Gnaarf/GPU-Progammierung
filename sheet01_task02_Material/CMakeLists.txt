@@ -1,4 +1,4 @@
-project(sheet01_task02_mirror)
+project(sheet01_task02_Material)
 cmake_minimum_required(VERSION 2.8)
 
 set(SRC_LIST material.cpp)

@@ -1,4 +1,4 @@
-project(sheet02_task04_mirror)
+project(sheet02_task04_Blending)
 cmake_minimum_required(VERSION 2.8)
 
 set(SRC_LIST blending.cpp)
