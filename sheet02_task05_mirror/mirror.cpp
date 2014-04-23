@@ -19,8 +19,15 @@ float distance = 2.5f;
 float oldX, oldY;
 int motionState;
 
+float angle_x_mirror = 0;
+// dreht spiegel um Normale
+float angle_y_mirror = 0;
+float angle_z_mirror = 0;
+
+float pos_mirror[3] = {2,-3,7};
+
 GLfloat lightPos[4] = {3, 3, 3, 1};
-GLfloat mirrorColor[4] = {1.0f, 0.2f, 0.2f, 0.8f};
+GLfloat mirrorColor[4] = {1.0f, 0.2f, 0.2f, 0.5f};
 GLfloat teapotColor[4] = {0.8f, 0.8f, 0.2f, 1.0f};
 
 
@@ -35,15 +42,21 @@ void drawScene()
 }
 
 // Spiegel zeichen: Ein Viereck
-void drawMirror()
+void drawMirror(GLint size)
 {
 	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mirrorColor);
+	glPushMatrix();
+	glRotatef(angle_x_mirror,1,0,0);
+	glRotatef(angle_z_mirror,0,0,1);
+	glRotatef(angle_y_mirror,0,1,0);
+	glTranslatef(pos_mirror[0],pos_mirror[1],pos_mirror[2]);
 	glBegin(GL_QUADS);
-	glVertex3f(1,0,1);
-	glVertex3f(1,0,-1);
-	glVertex3f(-1,0,-1);
-	glVertex3f(-1,0,1);
+	glVertex3f(size,0,size);
+	glVertex3f(size,0,-1*size);
+	glVertex3f(-1*size,0,-1*size);
+	glVertex3f(-1*size,0,size);
 	glEnd();
+	glPopMatrix();
 }
 
 void display(void)	
@@ -71,7 +84,7 @@ void display(void)
 	glEnable(GL_STENCIL_TEST);
 	glDisable(GL_DEPTH_TEST);
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-	drawMirror();
+	drawMirror(5);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	//glDisable(GL_STENCIL_TEST);
 	glEnable(GL_DEPTH_TEST);
@@ -85,19 +98,25 @@ void display(void)
 	glStencilFunc(GL_EQUAL,1,1);
 	
 	glPushMatrix();
+	glRotatef(angle_x_mirror,1,0,0);
+	glRotatef(angle_z_mirror,0,0,1);
+	// Translation entlang der Spiegelnormalen
+	glTranslatef(0,2*pos_mirror[1],0);
+	glRotatef(angle_z_mirror,0,0,1);
+	glRotatef(angle_x_mirror,1,0,0);
 	glScalef(1,-1,1);
-	//float lightpos2[4] = {lightPos[0],lightPos[1],lightPos[2],lightPos[3]};
 	glLightfv(GL_LIGHT0,GL_POSITION, lightPos);
 	drawScene();
 	glPopMatrix();
 
+	glLightfv(GL_LIGHT0,GL_POSITION, lightPos);
 	glDisable(GL_STENCIL_TEST);
 	// *** Stencil Test deaktivieren, Spiegelung der Szene rueckgaengig machen
 	// *** Spiegelobjekt mit diffuser Farbe mirrorColor zeichen
 	// *** Blending aktivieren und ueber Alpha-Kanal mit Spiegelbild zusammenrechnen
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-	drawMirror();
+	drawMirror(5);
 	glDisable(GL_BLEND);
 
 	glutSwapBuffers();	
@@ -146,6 +165,47 @@ void mouse(int button, int state, int x, int y)
 	}
 }
 
+void keyboard(unsigned char key, int x, int y)
+{
+	switch(key)
+	{
+	case '1':
+		angle_x_mirror += 1;
+		break;
+	case '2':
+		angle_z_mirror += 1;
+		break;
+	case '3':
+		angle_x_mirror = 0;
+		break;
+	case '4':
+		angle_z_mirror = 0;
+		break;
+	case '5':
+		pos_mirror[0] += 0.2;
+		break;
+	case '6':
+		pos_mirror[0] -= 0.2;
+		break;
+	case '7':
+		pos_mirror[1] -= 0.2;
+		break;
+	case '8':
+		pos_mirror[2] += 0.2;
+		break;
+	case '9':
+		pos_mirror[2] -= 0.2;
+		break;
+	case '0':
+		pos_mirror[0] = 0;
+		pos_mirror[1] = 0;
+		pos_mirror[2] = 0;
+		break;
+	}
+	glutPostRedisplay();
+}
+
+
 
 void idle(void)
 {
@@ -166,7 +226,7 @@ int main(int argc, char **argv)
 	glutDisplayFunc(display);
 	glutMotionFunc(mouseMotion);
 	glutMouseFunc(mouse);
-
+	glutKeyboardFunc(keyboard);
 
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
