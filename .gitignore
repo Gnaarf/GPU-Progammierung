@@ -2,7 +2,10 @@
 # please do not use the '**/' pattern, because it "is available in Git since version 1.8.2"
 #
 # 0 ignore -> don't ignore list
-# 1 don't ignore c++ files
+# 1 c++ files
+# 2 CMake files
+# 3 .gitignore file
+# 4 ignore build directories
 
 ### 0 ignore -> don't ignore list ###
 # ignore everything
@@ -17,7 +20,11 @@
 ### 2 CMakeLists.txt ##
 # don't ignore CMakeLists.txt files
 !CMakeLists.txt
+!*.cmake
 
 ### 3 .gitignore ###
 # don't ignore .gitignore files
 !.gitignore
+
+### 4 ignore build directories
+*/build/*
