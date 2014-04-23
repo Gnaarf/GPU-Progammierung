@@ -66,7 +66,7 @@ Vector startP2(-0.5f, 0.0f, -0.5f*sqrt(3.0f));
 Vector startP3(0.0f, 1.0f, 0.0f);
 
 int globalIndex = 0;
-int maxLevel = 8;
+int maxLevel = 10;
 
 void generateTriangle(Vector p0, Vector p1, Vector p2)
 {
@@ -251,18 +251,31 @@ void display()
 
 		drawGeometryVertexBuffer();
 	}
-	else {  // simple and slow drawing
+	else {  
+		// simple and slow drawing
+		//drawSimpleAndSlow();
 
-		glBegin(GL_TRIANGLES);
-		for (unsigned int i = 0 ; i < positions.size() ; i += 3) {
-			glNormal3fv(&normals[i][0]);
-			glVertex3fv(&positions[i][0]);
-			glNormal3fv(&normals[i+1][0]);
-			glVertex3fv(&positions[i+1][0]);
-			glNormal3fv(&normals[i+2][0]);
-			glVertex3fv(&positions[i+2][0]);
+		// using display list
+		drawDisplayList(); // DAFUQ!?! WIESO IST DAS SOOOOOO VIEL LANGSAMER!??
+		/*if(!glIsList(1))
+		{
+			glNewList(1, GL_COMPILE);
+			glBegin(GL_TRIANGLES);
+			for (unsigned int i = 0 ; i < positions.size() ; i += 3) {
+				glNormal3fv(&normals[i][0]);
+				glVertex3fv(&positions[i][0]);
+				glNormal3fv(&normals[i+1][0]);
+				glVertex3fv(&positions[i+1][0]);
+				glNormal3fv(&normals[i+2][0]);
+				glVertex3fv(&positions[i+2][0]);
+			}
+			glEnd();
+			glEndList();
 		}
-		glEnd();
+		else
+		{
+			glCallList(1);
+		}/**/
 
 	}
 
@@ -275,6 +288,43 @@ void display()
 	// measure frame time in milliseconds
 	int timeEnd = glutGet(GLUT_ELAPSED_TIME);
 	printf("Delay %d     \r",timeEnd - timeStart);
+}
+
+void drawSimpleAndSlow()
+{
+	glBegin(GL_TRIANGLES);
+	for (unsigned int i = 0 ; i < positions.size() ; i += 3) {
+		glNormal3fv(&normals[i][0]);
+		glVertex3fv(&positions[i][0]);
+		glNormal3fv(&normals[i+1][0]);
+		glVertex3fv(&positions[i+1][0]);
+		glNormal3fv(&normals[i+2][0]);
+		glVertex3fv(&positions[i+2][0]);
+	}
+	glEnd();
+}
+
+void drawDisplayList()
+{
+	if(!glIsList(1))
+	{
+		glNewList(1, GL_COMPILE);
+		glBegin(GL_TRIANGLES);
+		for (unsigned int i = 0 ; i < positions.size() ; i += 3) {
+			glNormal3fv(&normals[i][0]);
+			glVertex3fv(&positions[i][0]);
+			glNormal3fv(&normals[i+1][0]);
+			glVertex3fv(&positions[i+1][0]);
+			glNormal3fv(&normals[i+2][0]);
+			glVertex3fv(&positions[i+2][0]);
+		}
+		glEnd();
+		glEndList();
+	}
+	else
+	{
+		glCallList(1);
+	}
 }
 
 // use a virtual trackball as mouse control
