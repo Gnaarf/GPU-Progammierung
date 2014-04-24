@@ -2,6 +2,11 @@ project(sheet02_task05_mirror)
 cmake_minimum_required(VERSION 2.8)
 
 set(SRC_LIST mirror.cpp)
+set(SRC_LIST lodepng.h ${SRC_LIST})
+set(SRC_LIST lodepng.cpp ${SRC_LIST})
+
+file(COPY mirrorTexture.png DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY mirrorTexture2.png DESTINATION ${CMAKE_BINARY_DIR})
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/../CMakeFindFunctions ${CMAKE_MODULE_PATH})
 find_package(OpenGL REQUIRED)

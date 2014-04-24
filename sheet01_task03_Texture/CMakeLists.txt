@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 2.8)
 set(SRC_LIST Texture.cpp)
 set(SRC_LIST bmp.cpp ${SRC_LIST})
 
+file(COPY rockwall_color.bmp DESTINATION ${CMAKE_BINARY_DIR})
+
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/../CMakeFindFunctions ${CMAKE_MODULE_PATH})
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
