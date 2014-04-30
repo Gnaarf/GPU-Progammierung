@@ -3,9 +3,10 @@
 #
 # 0 ignore -> don't ignore list
 # 1 c++ files
-# 2 CMake files
-# 3 .gitignore file
-# 4 ignore build directories
+# 2 shader files
+# 3 CMake files
+# 4 .gitignore file
+# 5 ignore build directories
 
 ### 0 ignore -> don't ignore list ###
 # ignore everything
@@ -17,14 +18,23 @@
 !*.hpp
 !*.h
 
-### 2 CMakeLists.txt ##
+### 2 shader files
+# don't ignore shader files
+!*.frag
+!*.vert
+
+### 3 CMakeLists.txt ##
 # don't ignore CMakeLists.txt files
 !CMakeLists.txt
 !*.cmake
 
-### 3 .gitignore ###
+### 4 .gitignore ###
 # don't ignore .gitignore files
 !.gitignore
 
-### 4 ignore build directories
+### 5 build directories
+# This must be done in the end in order 
+# to not track files, that have been
+# copied into build directory.
+# ignore build directory
 */build/*

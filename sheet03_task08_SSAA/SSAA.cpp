@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <GL/freeglut.h>
 #include <iostream>
+#include <cstdio>
 using namespace std;
 
 // Global variables
@@ -16,16 +17,16 @@ GLuint sceneFB = 0;
 GLuint checkBoardTextureId = 0;
 
 // Window size
-int width = 512;       
+int width = 512;
 int height = 512;
 
 bool useSSAA = true;
-int samples = 2;	// Die Auflösung wird um das 2^'samples'-fache vergrößert.
+int samples = 2;	// Die AuflÃ¶sung wird um das 2^'samples'-fache vergrÃ¶ÃŸert.
 
-// Das Schachbrett kann über kleine schwarze und weiße Quads oder über ein großes texturiertes Quad gerendert werden.
+// Das Schachbrett kann Ã¼ber kleine schwarze und weiÃŸe Quads oder Ã¼ber ein groÃŸes texturiertes Quad gerendert werden.
 bool useTexturedQuad = true;
 
-// Flag das entscheidet, ob MSAA auf sample- oder pixel-frequency läuft.
+// Flag das entscheidet, ob MSAA auf sample- oder pixel-frequency lÃ¤uft.
 bool usePerSampleShading = false;
 
 void initGL()
@@ -61,13 +62,13 @@ int initFBOTextures()
 	glGenTextures (1, &sceneTextureId);
 	glBindTexture (GL_TEXTURE_2D, sceneTextureId);
 	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, width*(1<<samples), height*(1<<samples), 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	// TODO: Der Min-Filter führt derzeit noch kein MipMapping durch. Nutzen Sie auch den Nearest-Filter für das MipMapping!
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);	// <- hier den letzten Parameter ändern
+	// TODO: Der Min-Filter fÃ¼hrt derzeit noch kein MipMapping durch. Nutzen Sie auch den Nearest-Filter fÃ¼r das MipMapping!
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);	// <- hier den letzten Parameter Ã¤ndern
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
-	// Depth Buffer Textur anlegen 
+	// Depth Buffer Textur anlegen
 	glGenTextures (1, &depthTextureId);
 	glBindTexture (GL_TEXTURE_2D, depthTextureId);
 	glTexImage2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width*(1<<samples), height*(1<<samples), 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
@@ -81,7 +82,7 @@ int initFBOTextures()
 	glFramebufferTexture2D (GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTextureId, 0);
 
 	// TODO: Binden der Szenen Textur
-	// TODO: Setzen Sie die mindest LOD Stufe auf 'samples'. Nutzen Sie dafpr die Texture Filter Control von glTexEnvf	
+	// TODO: Setzen Sie die mindest LOD Stufe auf 'samples'. Nutzen Sie dafpr die Texture Filter Control von glTexEnvf
 
 	// check framebuffer status
 	GLenum status = glCheckFramebufferStatus (GL_FRAMEBUFFER);
@@ -117,22 +118,22 @@ void initTexture()
 	// Erzeugen eines Texturnames (handle).
 	glGenTextures(1, &checkBoardTextureId);
 
-	// Binden der Textur. (Hinweis: Das target heißt GL_TEXTURE_2D)
+	// Binden der Textur. (Hinweis: Das target heiÃŸt GL_TEXTURE_2D)
 	glBindTexture(GL_TEXTURE_2D, checkBoardTextureId);
 
-	// Füllen der Textur.
+	// FÃ¼llen der Textur.
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	
+
 	// Min und Mag Filter auf Nearest setzen (keine Interpolation).
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);	
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
 
 void keyboard(unsigned char key, int x, int y)
 {
 	// set parameters
-	switch (key) 
-	{       
+	switch (key)
+	{
 		case '1':
 			useSSAA = !useSSAA;
 			printf(useSSAA ? "SSAA/" : (usePerSampleShading ? "MSAA(sample)/" : "MSAA(pixel)/") );
@@ -145,10 +146,10 @@ void keyboard(unsigned char key, int x, int y)
 			break;
 		case '3':
 			usePerSampleShading = !usePerSampleShading;
-			
-			// TODO: Abhängig vom usePerSampleShading-Flag einstellen, für wieviele Samples der Fragment Shader ausgeführt werden soll.
-			// Per-Sample Shading = für alle Samples
-			// Per-Pixel Shading = für ein einziges Sample
+
+			// TODO: AbhÃ¤ngig vom usePerSampleShading-Flag einstellen, fÃ¼r wieviele Samples der Fragment Shader ausgefÃ¼hrt werden soll.
+			// Per-Sample Shading = fÃ¼r alle Samples
+			// Per-Pixel Shading = fÃ¼r ein einziges Sample
 
 			printf(useSSAA ? "SSAA/" : (usePerSampleShading ? "MSAA(sample)/" : "MSAA(pixel)/") );
 			printf(useTexturedQuad ? "Texture        \r" : "Geometry        \r");
@@ -161,7 +162,7 @@ void drawGround()
 	float size = 7;
 	int resolution = 6;
 	glPushMatrix();
-	glTranslatef(0, -2, 0);	
+	glTranslatef(0, -2, 0);
 	if (useTexturedQuad)
 	{
 		glEnable(GL_TEXTURE_2D);
@@ -185,29 +186,29 @@ void drawGround()
 		glDisable(GL_TEXTURE_2D);
 	}
 	else
-	{	
+	{
 		glBegin(GL_QUADS);
 		glNormal3f(0,1,0);
 		for (int x=-resolution; x<resolution; ++x)
 		{
 			for (int y=-resolution; y<resolution; ++y)
-			{	
+			{
 				if ( (x+y)%2 == 0 )
 					glColor3f(1,1,1);
 				else glColor3f(0,0,0);
 				glVertex3f((x+1) / (float)resolution * size, 0, (y+1) / (float)resolution * size);
 				glVertex3f((x+1) / (float)resolution * size, 0,  y    / (float)resolution * size);
 				glVertex3f( x    / (float)resolution * size, 0,  y    / (float)resolution * size);
-				glVertex3f( x    / (float)resolution * size, 0, (y+1) / (float)resolution * size);				
+				glVertex3f( x    / (float)resolution * size, 0, (y+1) / (float)resolution * size);
 			}
 		}
 		glEnd();
-	}	
+	}
 	glPopMatrix();
 }
 
 // Bildschirmfuellendes Rechteck zeichnen -> Fragment Program wird fuer jedes Pixel aufgerufen
-void drawScreenFillingQuad() 
+void drawScreenFillingQuad()
 {
 	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_DEPTH_TEST);
@@ -231,17 +232,17 @@ void drawScreenFillingQuad()
 		glVertex2f(1,1);
 		glTexCoord2f(0,1);
 		glVertex2f( -1,1);
-	}       
+	}
 	glEnd();
 
-	glPopMatrix();	
+	glPopMatrix();
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_LIGHTING);
 	glDisable(GL_TEXTURE_2D);
-} 
+}
 
 void drawScene()
 {
@@ -250,18 +251,18 @@ void drawScene()
 
 	glRotatef(alpha, 0, 1, 0);
 	drawGround();
-	
+
 	glutSolidTeapot(3);
 }
 
 void display()
-{	
+{
 	// Soll SSAA verwendet werden?
 	if (useSSAA)
 	{
-		// TODO: Größe des Viewports auf das 2^(samples) fache setzen
-		
-		// TODO: Binden des FBOs, in das gerendert werden soll.		
+		// TODO: GrÃ¶ÃŸe des Viewports auf das 2^(samples) fache setzen
+
+		// TODO: Binden des FBOs, in das gerendert werden soll.
 
 		// Clear Color- und Depth-Buffer
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -269,17 +270,17 @@ void display()
 		// Rendern der Szene
 		drawScene();
 
-		// TODO: Viewport auf die Auflösung des Backbuffers setzen.
-		
-		// TODO: FBO abschalten: jetzt wird wieder in den Backbuffer gerendert		
+		// TODO: Viewport auf die AuflÃ¶sung des Backbuffers setzen.
+
+		// TODO: FBO abschalten: jetzt wird wieder in den Backbuffer gerendert
 
 		// TODO: Binden der Szenen-Textur.
 
-		// TODO: Da die Textur nun aktiv ist, müssen die MipMap Stufen neu generiert werden.
-		
+		// TODO: Da die Textur nun aktiv ist, mÃ¼ssen die MipMap Stufen neu generiert werden.
+
 		// TODO: Color- und Depth-Buffer clearen.
-		
-		// TODO: Das Fullscreen Quad rendern, das mit der FBO Textur texturiert ist.		
+
+		// TODO: Das Fullscreen Quad rendern, das mit der FBO Textur texturiert ist.
 
 		// TODO: Textur nicht mehr binden.
 	}
@@ -326,7 +327,7 @@ int main(int argc, char** argv)
 	initFBOTextures();
 	initTexture();
 
-	// Register callback functions   
+	// Register callback functions
 	glutKeyboardFunc(keyboard);
 	glutDisplayFunc(display);
 	glutTimerFunc(25, timer, 0);     // Call timer() in 25 milliseconds
