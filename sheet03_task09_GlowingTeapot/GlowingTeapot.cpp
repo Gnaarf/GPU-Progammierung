@@ -158,6 +158,30 @@ GLuint createProgram(GLuint vertexShader, GLuint fragmentShader, int line){
 	return program;
 }
 
+void setUniformFloat(GLuint shader, string name, float value){
+	GLint location = glGetUniformLocation(shader, name.c_str());
+
+	if(location == -1){
+		cout << "ERROR: No such uniform variable \"" << name
+		     << "\" in shader " << shader << endl;
+	}
+	else{
+		glUniform1f(location, value);
+	}
+}
+
+void setUniformInt(GLuint shader, string name, int value){
+	GLint location = glGetUniformLocation(shader, name.c_str());
+
+	if(location == -1){
+		cout << "ERROR: No such uniform variable \"" << name
+		     << "\" in shader " << shader << endl;
+	}
+	else{
+		glUniform1i(location, value);
+	}
+}
+
 void initGLSL()
 {
 
@@ -171,10 +195,9 @@ void initGLSL()
 
 	// Eingabe in diesen Shader ist die Textur, in die die Szene gerendert wird.
 	// An dieser Stelle wird die uniform Location für die Textur-Variable im Shader geholt.
-	teapotTextureLocation = glGetUniformLocation(shaderProgramBlur, "texture" );
-	glUniform1i(teapotTextureLocation, 0);
-	if(teapotTextureLocation == -1)
-		cout << "ERROR: No such uniform teapot" << endl;
+	setUniformInt(shaderProgramBlur, "texture", 0);
+
+	setUniformInt(shaderProgramBlur, "filterWidth", 10);
 }
 
 

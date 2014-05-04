@@ -1,13 +1,13 @@
 uniform sampler2D texture;
 
+// Filtergroesse (gesamt)
+uniform int filterWidth;
+
 // Hier soll der Filter implementiert werden
 void main()
 {
         // Schrittweite fuer ein Pixel (bei Aufloesung 512)
         float texCoordDelta = 1. / 512.;
-
-        // Filtergroesse (gesamt)
-        int filterWidth = 8;
 
         // linke Ecke des Filters
         vec2 texCoord;
