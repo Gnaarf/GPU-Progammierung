@@ -1,5 +1,5 @@
 // Framework für GLSL-Programme
-// Pumping and Glowing Teapot 
+// Pumping and Glowing Teapot
 
 #include <GL/glew.h>
 #include <stdlib.h>
@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <cstdio>
 
 using namespace std;
 
@@ -15,7 +16,7 @@ GLfloat alpha = 0;
 
 // GLSL related variables
 // Blur Shader Program
-GLuint vertexShaderBlur = -1;	
+GLuint vertexShaderBlur = -1;
 GLuint fragmentShaderBlur = -1;
 GLuint shaderProgramBlur = -1;
 
@@ -25,7 +26,7 @@ GLuint depthTextureId = 0;
 GLuint teapotFB = 0;
 
 // Window size
-int width = 512;       
+int width = 512;
 int height = 512;
 
 // uniform locations
@@ -35,16 +36,18 @@ GLint blurHorizontalTextureLocation;
 bool useBlur = true;
 
 // Print information about the compiling step
-void printShaderInfoLog(GLuint shader)
+void printShaderInfoLog(GLuint shader, int line)
 {
-	if (shader == -1)
+	if (shader == -1){
+		std::cout << line << ": "<< "shader is -1\n";
 		return;
+	}
 
     GLint infologLength = 0;
     GLsizei charsWritten  = 0;
     char *infoLog;
 
-	glGetShaderiv(shader, GL_INFO_LOG_LENGTH,&infologLength);		
+	glGetShaderiv(shader, GL_INFO_LOG_LENGTH,&infologLength);
 	infoLog = (char *)malloc(infologLength);
 	glGetShaderInfoLog(shader, infologLength, &charsWritten, infoLog);
 	printf("%s\n",infoLog);
@@ -52,10 +55,12 @@ void printShaderInfoLog(GLuint shader)
 }
 
 // Print information about the linking step
-void printProgramInfoLog(GLuint program)
+void printProgramInfoLog(GLuint program, int line)
 {
-	if (program == -1)
+	if (program == -1){
+		std::cout << line << ": "<< "programm is -1\n";
 		return;
+	}
 
 	GLint infoLogLength = 0;
 	GLsizei charsWritten  = 0;
@@ -79,7 +84,7 @@ string readFile(string fileName)
 		while (!file.eof()){
 			getline (file,line);
 			line += "\n";
-			fileContent += line;					
+			fileContent += line;
 		}
 		file.close();
 	}
@@ -121,46 +126,53 @@ void initGL()
    glEnable(GL_DEPTH_TEST);
 }
 
+
+
+GLuint createShader(string sourceFileName, GLenum type, int line)
+{
+	// TODO: Create empty shader object
+	GLuint shader = glCreateShader(type);
+	// Read vertex shader source
+	string shaderSource = readFile(sourceFileName);
+	char const *shaderSourcePtr = shaderSource.c_str();
+	// TODO: Attach shader code
+	glShaderSource(shader, 1, &shaderSourcePtr, NULL);
+	// TODO: Compile shader
+	glCompileShader(shader);
+
+	printShaderInfoLog(shader, line);
+
+	return shader;
+}
+
+GLuint createProgram(GLuint vertexShader, GLuint fragmentShader, int line){
+	GLuint program = glCreateProgram();
+
+	glAttachShader(program, vertexShader);
+	glAttachShader(program, fragmentShader);
+
+	glLinkProgram(program);
+
+	printProgramInfoLog(program, line);
+
+	return program;
+}
+
 void initGLSL()
 {
-	// TODO: Create empty shader object (vertex shader) and assign it to 'vertexShaderPumping'
-	
-	// Read vertex shader source 
-	string shaderSource = readFile("blur.vert");
-	const char* sourcePtr = shaderSource.c_str();
 
-	// TODO: Attach shader code
-	
-	// TODO: Compile shader	
-	
-	printShaderInfoLog(vertexShaderBlur);
+	vertexShaderBlur = createShader("blur.vert", GL_VERTEX_SHADER, __LINE__);
+	fragmentShaderBlur = createShader("blur.frag", GL_FRAGMENT_SHADER, __LINE__);
 
-	// TODO: Create empty shader object (fragment shader) and assign it to 'fragmentShaderPumping'
+	shaderProgramBlur = createProgram(vertexShaderBlur, fragmentShaderBlur, __LINE__);
 
-	// Read vertex shader source 
-	shaderSource = readFile("blur.frag");
-	sourcePtr = shaderSource.c_str();
-
-	// TODO: Attach shader code
-
-	// TODO: Compile shader
-
-	printShaderInfoLog(fragmentShaderBlur);
-
-	// TODO: Create shader program and assign it to 'shaderProgramPumping'
-
-	// TODO: Attach shader vertex shader and fragment shader to program	
-
-	// TODO: Link program
-	
-	printProgramInfoLog(shaderProgramBlur);
-
-	// TODO: Use program.	
+	// TODO: Use program.
+	glUseProgram(shaderProgramBlur);
 
 	// Eingabe in diesen Shader ist die Textur, in die die Szene gerendert wird.
 	// An dieser Stelle wird die uniform Location für die Textur-Variable im Shader geholt.
-	teapotTextureLocation = glGetUniformLocation( shaderProgramBlur, "texture" );
-	glUniform1i(teapotTextureLocation, 0);   
+	teapotTextureLocation = glGetUniformLocation(shaderProgramBlur, "texture" );
+	glUniform1i(teapotTextureLocation, 0);
 	if(teapotTextureLocation == -1)
 		cout << "ERROR: No such uniform teapot" << endl;
 }
@@ -177,7 +189,7 @@ int initFBOTextures()
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
-	// Depth Buffer Textur anlegen 
+	// Depth Buffer Textur anlegen
 	glGenTextures (1, &depthTextureId);
 	glBindTexture (GL_TEXTURE_2D, depthTextureId);
 	glTexImage2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
@@ -192,7 +204,7 @@ int initFBOTextures()
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture (GL_TEXTURE_2D, teapotTextureId); // texture 0 is the teapot color buffer
-		
+
 	// check framebuffer status
 	GLenum status = glCheckFramebufferStatus (GL_FRAMEBUFFER);
 	switch (status)
@@ -214,8 +226,8 @@ int initFBOTextures()
 void keyboard(unsigned char key, int x, int y)
 {
 	// set parameters
-	switch (key) 
-	{       
+	switch (key)
+	{
 		case 'b':
 			useBlur = !useBlur;
 			break;
@@ -223,7 +235,7 @@ void keyboard(unsigned char key, int x, int y)
 }
 
 // Bildschirmfuellendes Rechteck zeichnen -> Fragment Program wird fuer jedes Pixel aufgerufen
-void drawScreenFillingQuad() 
+void drawScreenFillingQuad()
 {
 	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_DEPTH_TEST);
@@ -247,27 +259,20 @@ void drawScreenFillingQuad()
 		glVertex2f(1,1);
 		glTexCoord2f(0,1);
 		glVertex2f( -1,1);
-	}       
+	}
 	glEnd();
 
-	glPopMatrix();	
+	glPopMatrix();
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_LIGHTING);
 	glDisable(GL_TEXTURE_2D);
-} 
+}
 
-void display()
-{	
-	// Pumping Shader anschalten falls aktiviert
-	glUseProgram( 0 );
-	
-	// falls Blur Shader aktiviert ist, muss in eine Textur gerendert werden
-	if (useBlur)
-		glBindFramebuffer (GL_FRAMEBUFFER, teapotFB);      // activate fbo
-
+void drawSzene()
+{
 	// Clear window
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -276,21 +281,35 @@ void display()
 
 	glRotatef(alpha, 0, 1, 0);
 	glutSolidTeapot(3);
+}
 
-	// FBO abschalten: jetzt wird wieder in den Framebuffer gerendert
-	glBindFramebuffer (GL_FRAMEBUFFER, 0);      // deactivate fbo
+void display()
+{
+	// Pumping Shader anschalten falls aktiviert
+	glUseProgram( 0 );
 
-	// Blur Shader aktivieren und bildschirmfuellendes Rechteck zeichnen
-	if (useBlur) {
-		
+	// falls Blur Shader aktiviert ist, muss in eine Textur gerendert werden
+	if (useBlur){
+		// 1 draw szene into FBO teapotFB
+		glBindFramebuffer (GL_FRAMEBUFFER, teapotFB);      // activate fbo
+		drawSzene();
+		// FBO abschalten: jetzt wird wieder in den Framebuffer gerendert
+		glBindFramebuffer (GL_FRAMEBUFFER, 0);      // deactivate fbo
+
+
+		// 2 draw content of FBO teapotFB onto screen using blur
+		//   fragment programm
+		// Blur Shader aktivieren und bildschirmfuellendes Rechteck zeichnen
+
 		glUseProgram( shaderProgramBlur ); // activate horizontal blur shader
-
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		drawScreenFillingQuad();
-
 		glUseProgram( 0 );
 
 		// TODO: Teapot oben drüber zeichnen.
+	}
+	else{
+		drawSzene();
 	}
 
 	// Increment rotation angle
@@ -309,27 +328,39 @@ void timer(int value)
    glutPostRedisplay();
 }
 
+/// Init glew so that the GLSL functionality will be available
+void initGLEW()
+{
+	if(glewInit() != GLEW_OK){
+		cout << "GLEW init failed!" << endl;
+	}
+}
+
+void initGLUT(char** argv, int argc)
+{
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
+	glutInitWindowSize(width, height);
+	glutCreateWindow("Glowing Teapot");
+}
+
+void registerCallbackFunctions()
+{
+	glutKeyboardFunc(keyboard);
+	glutDisplayFunc(display);
+	glutTimerFunc(25, timer, 0);	// Call timer() in 25 milliseconds
+}
+
 int main(int argc, char** argv)
 {
-   // Initialize GLUT
-   glutInit(&argc, argv);
-   glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
-   glutInitWindowSize(width, height);
-   glutCreateWindow("Glowing Teapot");
-
-   // Init glew so that the GLSL functionality will be available
-   if(glewInit() != GLEW_OK)
-	   cout << "GLEW init failed!" << endl;
-
+	initGLUT(argv, argc);
+	initGLEW();
 	// OpenGL/GLSL initializations
 	initGL();
 	initFBOTextures();
 	initGLSL();
 
-	// Register callback functions   
-	glutKeyboardFunc(keyboard);
-	glutDisplayFunc(display);
-	glutTimerFunc(25, timer, 0);     // Call timer() in 25 milliseconds
+	registerCallbackFunctions();
 
 	// Enter main loop
 	glutMainLoop();
