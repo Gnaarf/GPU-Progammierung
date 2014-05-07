@@ -5,6 +5,8 @@ set(SRC_LIST GlowingTeapot.cpp)
 
 set(SHADER_FILES blur.vert)
 set(SHADER_FILES blur.frag ${SHADER_FILES})
+set(SHADER_FILES blur_hori.frag ${SHADER_FILES})
+set(SHADER_FILES blur_vert.frag ${SHADER_FILES})
 file(COPY ${SHADER_FILES} DESTINATION ${CMAKE_BINARY_DIR})
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/../CMakeFindFunctions ${CMAKE_MODULE_PATH})

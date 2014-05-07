@@ -14,16 +14,27 @@ using namespace std;
 // Global variables
 GLfloat alpha = 0;
 
+int filterWidth = 55;
+
 // GLSL related variables
 // Blur Shader Program
 GLuint vertexShaderBlur = -1;
 GLuint fragmentShaderBlur = -1;
+GLuint fragmentShaderBlurHori = -1;
+GLuint fragmentShaderBlurVert = -1;
+
 GLuint shaderProgramBlur = -1;
+GLuint shaderProgramSeperatedBlurA = -1;
+GLuint shaderProgramSeperatedBlurB = -1;
 
 // Texture Ids and Framebuffer Object Ids
-GLuint teapotTextureId = 0;
-GLuint depthTextureId = 0;
-GLuint teapotFB = 0;
+GLuint texture01ID = 0;
+GLuint depthTexture01Id = 0;
+GLuint frameBufferA = 0;
+GLuint frameBufferB = 0;
+
+static unsigned int const FRAMEBUFFER_A_TARGET_ACTIVE_TEXTURE_NUMBER = 1;
+static unsigned int const FRAMEBUFFER_B_TARGET_ACTIVE_TEXTURE_NUMBER = 2;
 
 // Window size
 int width = 512;
@@ -34,6 +45,8 @@ GLint teapotTextureLocation;
 GLint blurHorizontalTextureLocation;
 
 bool useBlur = true;
+bool useSeparetedFilter = true;
+bool shouldDrawOriginalSzene = true;
 
 // Print information about the compiling step
 void printShaderInfoLog(GLuint shader, int line)
@@ -158,23 +171,11 @@ GLuint createProgram(GLuint vertexShader, GLuint fragmentShader, int line){
 	return program;
 }
 
-void setUniformFloat(GLuint shader, string name, float value){
-	GLint location = glGetUniformLocation(shader, name.c_str());
-
-	if(location == -1){
-		cout << "ERROR: No such uniform variable \"" << name
-		     << "\" in shader " << shader << endl;
-	}
-	else{
-		glUniform1f(location, value);
-	}
-}
-
 void setUniformInt(GLuint shader, string name, int value){
 	GLint location = glGetUniformLocation(shader, name.c_str());
 
 	if(location == -1){
-		cout << "ERROR: No such uniform variable \"" << name
+		std::cout << "ERROR: no such uniform variable \"" << name
 		     << "\" in shader " << shader << endl;
 	}
 	else{
@@ -182,68 +183,149 @@ void setUniformInt(GLuint shader, string name, int value){
 	}
 }
 
+void createPrograms()
+{
+	vertexShaderBlur = createShader("blur.vert", GL_VERTEX_SHADER, __LINE__);
+	fragmentShaderBlur = createShader("blur.frag", GL_FRAGMENT_SHADER, __LINE__);
+	fragmentShaderBlurHori = createShader("blur_hori.frag", GL_FRAGMENT_SHADER, __LINE__);
+	fragmentShaderBlurVert = createShader("blur_vert.frag", GL_FRAGMENT_SHADER, __LINE__);
+
+	shaderProgramBlur = createProgram(vertexShaderBlur, fragmentShaderBlur, __LINE__);
+	shaderProgramSeperatedBlurA = createProgram(vertexShaderBlur, fragmentShaderBlurHori, __LINE__);
+	shaderProgramSeperatedBlurB = createProgram(vertexShaderBlur, fragmentShaderBlurVert, __LINE__);
+}
+
+void setupUniformVariables()
+{
+	glUseProgram(shaderProgramBlur);
+	// Eingabe in diesen Shader ist die Textur, in die die Szene gerendert wird.
+	// An dieser Stelle wird die uniform Location für die Textur-Variable im Shader geholt.
+	setUniformInt(shaderProgramBlur, "texture", FRAMEBUFFER_A_TARGET_ACTIVE_TEXTURE_NUMBER);
+	setUniformInt(shaderProgramBlur, "filterWidth", filterWidth);
+
+	glUseProgram(shaderProgramSeperatedBlurA);
+	setUniformInt(shaderProgramSeperatedBlurA, "texture", FRAMEBUFFER_A_TARGET_ACTIVE_TEXTURE_NUMBER);
+	setUniformInt(shaderProgramSeperatedBlurA, "filterWidth", filterWidth);
+
+	glUseProgram(shaderProgramSeperatedBlurB);
+	setUniformInt(shaderProgramSeperatedBlurB, "texture", FRAMEBUFFER_B_TARGET_ACTIVE_TEXTURE_NUMBER);
+	setUniformInt(shaderProgramSeperatedBlurB, "filterWidth", filterWidth);
+}
+
 void initGLSL()
 {
 
-	vertexShaderBlur = createShader("blur.vert", GL_VERTEX_SHADER, __LINE__);
-	fragmentShaderBlur = createShader("blur.frag", GL_FRAGMENT_SHADER, __LINE__);
+	createPrograms();
 
-	shaderProgramBlur = createProgram(vertexShaderBlur, fragmentShaderBlur, __LINE__);
+	setupUniformVariables();
+}
 
-	// TODO: Use program.
-	glUseProgram(shaderProgramBlur);
+bool isBoundFramebufferStateOK(){
+	bool result = false;
+	GLenum status = glCheckFramebufferStatus (GL_FRAMEBUFFER);
 
-	// Eingabe in diesen Shader ist die Textur, in die die Szene gerendert wird.
-	// An dieser Stelle wird die uniform Location für die Textur-Variable im Shader geholt.
-	setUniformInt(shaderProgramBlur, "texture", 0);
+	switch (status)
+	{
+	case GL_FRAMEBUFFER_COMPLETE:
+		cout << "FBO complete" << endl;
+		result = true;
+		break;
+	case GL_FRAMEBUFFER_UNSUPPORTED:
+		cout << "FBO configuration unsupported" << endl;
+		break;
+	default:
+		cout << "FBO programmer error" << endl;
+		break;
+	}
 
-	setUniformInt(shaderProgramBlur, "filterWidth", 10);
+	return result;
 }
 
 
-int initFBOTextures()
+GLuint createFBTexture()
 {
-	// Textur (fuer Teapot Bild) anlegen
-	glGenTextures (1, &teapotTextureId);
-	glBindTexture (GL_TEXTURE_2D, teapotTextureId);
+	GLuint texture = 0;
+
+	glGenTextures (1, &texture);
+	glBindTexture (GL_TEXTURE_2D, texture);
+
+	// set properties
 	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
-	// Depth Buffer Textur anlegen
-	glGenTextures (1, &depthTextureId);
-	glBindTexture (GL_TEXTURE_2D, depthTextureId);
+	glBindTexture (GL_TEXTURE_2D, 0);
+
+	return texture;
+}
+
+GLuint createFBDepthTexture()
+{
+	GLuint depthTexture = 0;
+
+	glGenTextures (1, &depthTexture);
+	glBindTexture (GL_TEXTURE_2D, depthTexture);
+
+	// set properties
 	glTexImage2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	// FBO (fuer Teapot Textur) anlegen und Texturen zuweisen
-	glGenFramebuffers (1, &teapotFB);
-	glBindFramebuffer (GL_FRAMEBUFFER, teapotFB);
-	glFramebufferTexture2D (GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, teapotTextureId, 0);
-	glFramebufferTexture2D (GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTextureId, 0);
+	glBindTexture (GL_TEXTURE_2D, 0);
 
+	return depthTexture;
+}
+
+GLuint createFramebuffer(unsigned int targetActiveTextureNumber){
+	// Textur (fuer Teapot Bild) anlegen
+	GLuint texture = createFBTexture();
+
+	// Depth Buffer Textur anlegen
+	GLuint depthTexture = createFBDepthTexture();
+
+
+	// FBO (fuer Teapot Textur) anlegen und Texturen zuweisen
+	GLuint framebuffer = 0;
+	glGenFramebuffers(1, &framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
+
+
+	GLenum targetActiveTexture;
+	switch(targetActiveTextureNumber){
+	case 1:
+		targetActiveTexture = GL_TEXTURE1;
+		break;
+	case 2:
+		targetActiveTexture = GL_TEXTURE2;
+		break;
+	case 3:
+		targetActiveTexture = GL_TEXTURE3;
+		break;
+	default:
+		targetActiveTexture = GL_TEXTURE0;
+		break;
+	}
+
+	glActiveTexture(targetActiveTexture);
+	glBindTexture (GL_TEXTURE_2D, texture);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture (GL_TEXTURE_2D, teapotTextureId); // texture 0 is the teapot color buffer
 
 	// check framebuffer status
-	GLenum status = glCheckFramebufferStatus (GL_FRAMEBUFFER);
-	switch (status)
-	{
-	case GL_FRAMEBUFFER_COMPLETE:
-		cout << "FBO complete" << endl;
-		break;
-	case GL_FRAMEBUFFER_UNSUPPORTED:
-		cout << "FBO configuration unsupported" << endl;
-		return 1;
-	default:
-		cout << "FBO programmer error" << endl;
-		return 1;
-	}
-	glBindFramebufferEXT (GL_FRAMEBUFFER, 0);
-	return 0;
+	isBoundFramebufferStateOK();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	return framebuffer;
+}
+
+void initFBOTextures()
+{
+	frameBufferA = createFramebuffer(FRAMEBUFFER_A_TARGET_ACTIVE_TEXTURE_NUMBER);
+	frameBufferB = createFramebuffer(FRAMEBUFFER_B_TARGET_ACTIVE_TEXTURE_NUMBER);
 }
 
 void keyboard(unsigned char key, int x, int y)
@@ -253,6 +335,12 @@ void keyboard(unsigned char key, int x, int y)
 	{
 		case 'b':
 			useBlur = !useBlur;
+			break;
+		case 's':
+			useSeparetedFilter = !useSeparetedFilter;
+			break;
+		case 'd':
+			shouldDrawOriginalSzene = !shouldDrawOriginalSzene;
 			break;
 	}
 }
@@ -296,14 +384,51 @@ void drawScreenFillingQuad()
 
 void drawSzene()
 {
-	// Clear window
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	glLoadIdentity();
 	gluLookAt(10, 7, 10, 0, 0, 0, 0, 1, 0);
 
 	glRotatef(alpha, 0, 1, 0);
 	glutSolidTeapot(3);
+}
+
+void blurNormal(){
+	// 1 draw szene into FBO framebufferA
+	glBindFramebuffer(GL_FRAMEBUFFER, frameBufferA);// Clear window
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	drawSzene();
+
+	// 2 draw content of FBO frameBufferA onto screen using blur
+	//   fragment programm
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glUseProgram(shaderProgramBlur);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	drawScreenFillingQuad();
+
+	glUseProgram( 0 );
+}
+
+void blurSeparated(){
+	// 1 draw szene into FBO framebufferA
+	glBindFramebuffer (GL_FRAMEBUFFER, frameBufferA);// Clear window
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	drawSzene();
+
+	// 2 draw content of FBO framebufferA into framebufferB using blur
+	//   fragment programm
+	// Blur Shader aktivieren und bildschirmfuellendes Rechteck zeichnen
+	glBindFramebuffer(GL_FRAMEBUFFER, frameBufferB);
+	glUseProgram(shaderProgramSeperatedBlurA);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	drawScreenFillingQuad();
+
+	// 3 draw content of FBO framebufferB onto screen using blur
+	//   fragment programm
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glUseProgram(shaderProgramSeperatedBlurB);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	drawScreenFillingQuad();
+
+	glUseProgram( 0 );
 }
 
 void display()
@@ -313,26 +438,22 @@ void display()
 
 	// falls Blur Shader aktiviert ist, muss in eine Textur gerendert werden
 	if (useBlur){
-		// 1 draw szene into FBO teapotFB
-		glBindFramebuffer (GL_FRAMEBUFFER, teapotFB);      // activate fbo
-		drawSzene();
-		// FBO abschalten: jetzt wird wieder in den Framebuffer gerendert
-		glBindFramebuffer (GL_FRAMEBUFFER, 0);      // deactivate fbo
 
-
-		// 2 draw content of FBO teapotFB onto screen using blur
-		//   fragment programm
-		// Blur Shader aktivieren und bildschirmfuellendes Rechteck zeichnen
-
-		glUseProgram( shaderProgramBlur ); // activate horizontal blur shader
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		drawScreenFillingQuad();
-		glUseProgram( 0 );
-
+		if(useSeparetedFilter){
+			blurSeparated();
+		}else{
+			blurNormal();
+		}
 		// TODO: Teapot oben drüber zeichnen.
+		if(shouldDrawOriginalSzene){
+			drawSzene();
+		}
 	}
 	else{
-		drawSzene();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		if(shouldDrawOriginalSzene){
+			drawSzene();
+		}
 	}
 
 	// Increment rotation angle
