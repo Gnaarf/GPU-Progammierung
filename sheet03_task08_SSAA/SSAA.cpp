@@ -85,7 +85,8 @@ int initFBOTextures()
 	// TODO: Binden der Szenen Textur
 	glBindTexture(GL_TEXTURE_2D,sceneTextureId);
 	// TODO: Setzen Sie die mindest LOD Stufe auf 'samples'. Nutzen Sie dafpr die Texture Filter Control von glTexEnvf	
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, samples);
+	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, samples);
+	glTexEnvf(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD,samples);
 
 	// check framebuffer status
 	GLenum status = glCheckFramebufferStatus (GL_FRAMEBUFFER);
@@ -156,13 +157,13 @@ void keyboard(unsigned char key, int x, int y)
 
 			if(usePerSampleShading)
 			{
-				glEnable(GL_ARB_sample_shading);
-				glMinSampleShadingARB(1);
+				glEnable(GL_SAMPLE_SHADING_ARB);
+				glMinSampleShadingARB(0.99);
 			}
 			else
 			{
-				glMinSampleShadingARB(0);
-				glDisable(GL_ARB_sample_shading);
+				glMinSampleShadingARB(0.01);
+				glDisable(GL_SAMPLE_SHADING_ARB);
 			}
 
 			printf(useSSAA ? "SSAA/" : (usePerSampleShading ? "MSAA(sample)/" : "MSAA(pixel)/") );
@@ -181,7 +182,7 @@ void keyboard(unsigned char key, int x, int y)
 				glGetIntegerv(GL_SAMPLES_ARB, &buffers);
 				glGetIntegerv(GL_MAX_SAMPLES_EXT, &sampleNum);
 				glGetFloatv(GL_MIN_SAMPLE_SHADING_VALUE_ARB, &min_samples);
-				printf("MSAA samples = %d, max_samples = %d, min_samples = %d                       \r",buffers,sampleNum, min_samples);
+				printf("MSAA samples = %d, max_samples = %d, min_samples = %f                       \r",buffers,sampleNum, min_samples);
 			} 
 			else 
 			{
@@ -337,6 +338,7 @@ void display()
 	glutSwapBuffers();
 }
 
+
 void timer(int value)
 {
    // Call timer() again in 25 milliseconds
@@ -352,7 +354,7 @@ int main(int argc, char** argv)
    glutInit(&argc, argv);
 
    // TODO: Enable Multi-Sampling
-   glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH | GL_MULTISAMPLE_ARB);
+   glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH | GL_MULTISAMPLE);
    glutInitWindowSize(width, height);
    glutCreateWindow("Super-Sampling Anti-Aliasing");
 
