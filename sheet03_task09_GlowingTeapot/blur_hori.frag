@@ -12,25 +12,21 @@ void main()
         // linke Ecke des Filters
         vec2 texCoord;
         texCoord.x = gl_TexCoord[0].s - (float(filterWidth / 2) * texCoordDelta);
-        texCoord.y = gl_TexCoord[0].t - (float(filterWidth / 2) * texCoordDelta);
+        texCoord.y = gl_TexCoord[0].t;
 
         // Wert zum Aufakkumulieren der Farbwerte
         vec3 val = vec3(0);
 
         vec2 texelDelta = vec2(0);
 
-        for(int dy = 0; dy < filterWidth; dy++)
+        for(int dx = 0; dx < filterWidth; dx++)
         {
-                texelDelta.y = float(dy);
-                for(int dx = 0; dx < filterWidth; dx++)
-                {
-                        texelDelta.x = float(dx);
-                        val = val + texture2D(texture, texCoord + texelDelta*texCoordDelta).rgb;
-                }
+                texelDelta.x = float(dx);
+                val = val + texture2D(texture, texCoord + texelDelta*texCoordDelta).rgb;
         }
 
-        // Durch filterWidth^2 teilen, um zu normieren.
-        val = 2.0 * val / float(filterWidth*filterWidth);
+        // Durch filterWidth teilen, um zu normieren.
+        val = 2.0 * val / float(filterWidth);
 
         // TODO: Ausgabe von val
         gl_FragColor.rgb = val;
