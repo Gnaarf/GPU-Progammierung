@@ -28,3 +28,8 @@
 
 ### 4 ignore build directories
 */build/*
+
+### 5 don't ignore Shader sources
+!*.vert
+!*.geom
+!*.frag
