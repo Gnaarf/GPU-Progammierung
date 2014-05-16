@@ -20,7 +20,10 @@
 
 ### 2 shader files
 # don't ignore shader files
+!*.dom
 !*.frag
+!*.geom
+!*.hull
 !*.vert
 
 ### 3 CMakeLists.txt ##
@@ -38,8 +41,3 @@
 # copied into build directory.
 # ignore build directory
 */build/*
-
-### 5 don't ignore Shader sources
-!*.vert
-!*.geom
-!*.frag

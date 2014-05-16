@@ -1,0 +1,42 @@
+
+#version 400
+
+// TODO: Topology, spacing sceme und winding order (counter clock wise) angeben! (layout modifier)
+// spacing schemes: fractional_even_spacing, fractional_odd_spacing, equal_spacing -> sucht euch was aus :)
+
+// inputs from the hull shader.
+in vec3 hs_out_Position[];
+in vec3 hs_out_Normal[];
+in vec2 hs_out_TexCoord[];
+
+// output of the domain shader.
+out vec3 ds_out_Normal;
+out vec2 ds_out_TexCoord;
+
+layout(std140) uniform GlobalMatrices
+{
+	mat4 Projection;
+	mat4 View;
+};
+
+layout(std140) uniform TessFactors
+{
+	float insideTess;
+	float outsideTess;
+	float alpha;
+};
+
+void main()
+{
+	// TODO: Baryzentrische Interpolation zwischen den drei Eckpunkten durchführen, um den Punkt p im Dreieck zu bestimmen.
+	
+	// TODO: Projektion des Punktes p in die Tangentialebenen der Eckpunkte, wiederum baryzentrische Interpolation zwischen den projizierten Punkten ergibt Punkt q.
+	
+	// TODO: Lineare Interpolation zwischen p und q anhand von alpha ergibt den fertigen Punkt x.
+    
+	// TODO: Baryzentrische Interpolation der Texturkoordinaten und Normalen.
+	
+	// TODO: Normale in den View Space transformieren.
+	
+	// TODO: Punkt x in den Clipping Space transformieren und rausreichen.
+}

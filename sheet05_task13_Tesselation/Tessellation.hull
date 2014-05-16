@@ -1,0 +1,34 @@
+
+#version 400
+
+// number of vertices. 
+layout(vertices = 3) out;
+
+// input from the vertex shader.
+in vec3 vs_out_Position[];
+in vec3 vs_out_Normal[];
+in vec2 vs_out_TexCoord[];
+
+// output of the hull shader.
+out vec3 hs_out_Position[];
+out vec3 hs_out_Normal[];
+out vec2 hs_out_TexCoord[];
+
+layout(std140) uniform TessFactors
+{
+	float insideTess;
+	float outsideTess;
+	float alpha;
+};
+
+void main()
+{
+    if (gl_InvocationID == 0) // Nur ein Thread muss dem Tessellator die Tessellation Factors mitteilen.
+	{	
+		// TODO: Dem Tessellator die Tessellation Factors mitteilen.
+
+		// Zusatzaufgabe: Nicht direkt die Werte aus dem UBO lesen, sondern Distanz-abhängig von der Kamera machen!
+    }
+	
+	// TODO: Position, Normale und Texturkoordinaten durchreichen
+}
