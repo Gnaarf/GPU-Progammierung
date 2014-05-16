@@ -38,8 +38,14 @@ void swap(GLuint& A, GLuint& B)
 // ------- Particle --------
 struct PARTICLE_VERTEX
 {
-    GLfloat pos[2];	// 2D position of the particle.
-	GLuint state;	// // 2=Head, 1=Body, 0=Tail
+    enum State : GLuint{
+		HEAD = 2,
+		BODY = 1,
+		TAIL = 0
+	};
+	
+	GLfloat pos[2];	// 2D position of the particle.
+	State state;	// // 2=Head, 1=Body, 0=Tail
 };
 #define MAX_PARTICLES 1000000
 
@@ -145,10 +151,13 @@ void display(void)
 	glBeginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, Query); 
 
 	// TODO: Binden des Feedback Objekts (feedback_streamTo)
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, feedback_streamTo);
 	
 	// TODO: Beginne Feedback Recording von GL_POINTS
+	glBeginTransformFeedback(GL_POINTS);
 	
 	// TODO: Binden des VAO von dem gelesen werden soll
+	glBindVertexArray(vao_readFrom);
 	
 	// In der ersten Iteration glDrawArrays verwenden, später den Feedback Draw Call nehmen.
 	if( bFirst ) {
@@ -157,9 +166,11 @@ void display(void)
 	else {
 		// TODO: Den Transform Feedback Draw-Call nehmen, da dieser bereits weiß, wieviele Vertices sich derzeit im Stream befinden.
 		// D.h. wir müssen diese Zahl nicht per Query zurücklesen, um den Draw-Call abzusetzen.
+		glDrawTransformFeedback(GL_POINTS, feedback_readFrom);
 	}	
 
 	// TODO: Beenden des Feedback Recording
+	glEndTransformFeedback();
 
 	// End query
 	glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN); 
@@ -310,6 +321,7 @@ void initFlow(float* flowData)
 #define BUFFER_OFFSET(i) ((char*)NULL + (i))
 #endif
 
+/// initialize stream_from and stream_to
 void initArrayBuffer()
 {
 	// Generate initial seeds
@@ -319,11 +331,12 @@ void initArrayBuffer()
 		float t = i / (float)(NUM_SEEDS-1);
 		vertStart[i*2 + 0].pos[0] = seedlineA[0] * (1-t) + seedlineB[0] * t;
 		vertStart[i*2 + 0].pos[1] = seedlineA[1] * (1-t) + seedlineB[1] * t;
-		vertStart[i*2 + 0].state = 2;	// Head
+		vertStart[i*2 + 0].state = PARTICLE_VERTEX::HEAD;
 
+		// "tail"-partikel an gleicher Position
 		vertStart[i*2 + 1].pos[0] = vertStart[i*2 + 0].pos[0];
 		vertStart[i*2 + 1].pos[1] = vertStart[i*2 + 0].pos[1];
-		vertStart[i*2 + 1].state = 0;	// Tail
+		vertStart[i*2 + 1].state = PARTICLE_VERTEX::TAIL;
     }
 	
 	glGenBuffers(1, &vbo_streamTo);
@@ -388,14 +401,29 @@ void initVertexArray()
 	glBindVertexArray(0);
 }
 
+GLuint createTransformFeedback(GLuint vboID){
+	GLuint transformFeedback;
+
+	// TODO: Buffer Objekt generieren und in Variable transformFeedback speichern.
+	glGenTransformFeedbacks(1, &transformFeedback);
+
+	// TODO: Buffer Objekt binden
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformFeedback);
+
+	// TODO: vboID mit dem Buffer Objekt verknüpfen (wenn man das Transform Feedback Objekt bindet, wird künftig in dieses VBO geschrieben)
+	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vboID);
+
+	// TODO: Buffer Objekt unbinden
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+
+	return transformFeedback;
+}
+
 void initFeedback()
 {
-	// TODO: Buffer Objekt generieren und in Variable feedback_readFrom speichern.
-	// TODO: Buffer Objekt binden
-	// TODO: vbo_readFrom mit dem Buffer Objekt verknüpfen (wenn man das Transform Feedback Objekt bindet, wird künftig in dieses VBO geschrieben)
-	// TODO: Buffer Objekt unbinden
-	
-	// TODO: Das selbe nochmal für feedback_streamTo
+	// TODO: generiere "transformFeedback"-Objekte für readFrom und streamTo
+	feedback_readFrom = createTransformFeedback(vbo_readFrom);
+	feedback_streamTo = createTransformFeedback(vbo_streamTo);
 }
 
 void initParams()
@@ -419,8 +447,9 @@ void idle()
 
 int main(int argc, char** argv)
 {
+
 	// Load vector field (raw data, resolution of the grid and the bounding box).
-	const char* FileName = "H://Dev//Datasets//Cylinder2D.am";
+	const char* FileName = "Cylinder2D.am";
 	float* flowData = LoadField(FileName, &dim[0], &dim[1], &dim[2], &box_min[0], &box_min[1], &box_min[2], &box_max[0], &box_max[1], &box_max[2]);
 
 	if (!flowData)
