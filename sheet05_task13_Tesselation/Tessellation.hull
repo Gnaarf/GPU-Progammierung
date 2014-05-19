@@ -26,9 +26,17 @@ void main()
     if (gl_InvocationID == 0) // Nur ein Thread muss dem Tessellator die Tessellation Factors mitteilen.
 	{	
 		// TODO: Dem Tessellator die Tessellation Factors mitteilen.
+		gl_TessLevelInner[0] = insideTess;
+        gl_TessLevelInner[1] = insideTess;
+        gl_TessLevelOuter[0] = outsideTess;
+        gl_TessLevelOuter[1] = outsideTess;
+        gl_TessLevelOuter[2] = outsideTess; 
 
 		// Zusatzaufgabe: Nicht direkt die Werte aus dem UBO lesen, sondern Distanz-abhängig von der Kamera machen!
     }
 	
 	// TODO: Position, Normale und Texturkoordinaten durchreichen
+	hs_out_Position[gl_InvocationID] = vs_out_Position[gl_InvocationID];
+	hs_out_Normal[gl_InvocationID] = vs_out_Normal[gl_InvocationID];
+	hs_out_TexCoord[gl_InvocationID] = vs_out_TexCoord[gl_InvocationID];
 }

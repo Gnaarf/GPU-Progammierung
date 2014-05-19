@@ -43,6 +43,8 @@ GLuint progTessellation;
 GLuint uboCamera;
 GLuint uboTessellation;
 
+GLint patchVerts = 3;
+
 GLfloat insideTess = 4;
 GLfloat outsideTess = 4;
 GLfloat alpha = 1;
@@ -257,12 +259,13 @@ void display(void)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboelephant);
 
 	// TODO: Shader binden
-	// glUseProgram(progTessellation);
+	glUseProgram(progTessellation);
 
 	// TODO: GL mitteilen, dass ein Patch aus drei Vertices besteht
+	glPatchParameteri(GL_PATCH_VERTICES, patchVerts);
 	
 	// TODO: Primitiv-Typ auf Patches umstellen.
-	glDrawElements(GL_TRIANGLES, elephantIndicesSize/elephantIndicesStride, GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_PATCHES, elephantIndicesSize/elephantIndicesStride, GL_UNSIGNED_INT, 0);
 	glUseProgram(0);
 	
 	// Unbind VAO and IBO
