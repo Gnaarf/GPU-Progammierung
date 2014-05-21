@@ -3,12 +3,15 @@
 
 // TODO: Topology, spacing sceme und winding order (counter clock wise) angeben! (layout modifier)
 // spacing schemes: fractional_even_spacing, fractional_odd_spacing, equal_spacing -> sucht euch was aus :)
-layout(triangles, equal_spacing, cw) in;
+layout(triangles, fractional_even_spacing, cw) in;
 
 // inputs from the hull shader.
 in vec3 hs_out_Position[];
 in vec3 hs_out_Normal[];
 in vec2 hs_out_TexCoord[];
+
+in float debug_hs_out_camDist[];
+out float debug_ds_out_camDist;
 
 // output of the domain shader.
 out vec3 ds_out_Normal;
@@ -70,8 +73,10 @@ void main()
 	vec3 n = baryInterpolate(gl_TessCoord, n1, n2, n3);
 	
 	// TODO: Normale in den View Space transformieren.
-	vec4 nor = /*transpose(inverse(Projection * View)) */ vec4(n,0);
+	vec4 nor = /*transpose(inverse(*/Projection * View * vec4(n,0);
 	ds_out_Normal = nor.xyz;
 	// TODO: Punkt x in den Clipping Space transformieren und rausreichen.
 	gl_Position = Projection * View * vec4(pfin,1);
+
+	debug_ds_out_camDist = debug_hs_out_camDist[0];
 }

@@ -43,6 +43,8 @@ GLuint progTessellation;
 GLuint uboCamera;
 GLuint uboTessellation;
 
+GLint uniformCam;
+
 GLint patchVerts = 3;
 
 GLfloat insideTess = 4;
@@ -130,6 +132,15 @@ void calcViewerCamera(float theta, float phi, float r)
 	glGetFloatv(GL_MODELVIEW_MATRIX, matrix);
 	glBindBuffer(GL_UNIFORM_BUFFER, uboCamera);
 	glBufferSubData(GL_UNIFORM_BUFFER, sizeof(float) * 16, sizeof(float) * 16, matrix);
+
+	/*GLint* currProg = NULL;
+	glGetIntegerv(GL_CURRENT_PROGRAM, currProg);*/
+	glUseProgram(progTessellation);
+	
+	GLint loc;
+	loc=glGetUniformLocation(progTessellation, "cameraPosition");
+	glUniform3f(loc, viewPosition[0],viewPosition[1],viewPosition[2]);
+	glUseProgram(0);
 }
 
 void mouseMotion(int x, int y)
