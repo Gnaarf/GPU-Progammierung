@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <vector>
-#include <cstdio>
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
@@ -14,7 +13,7 @@
 
 using namespace std;
 
-float center[3] = {0.0f, 0.5f, 0.0f};
+float center[3] = {0.0f, 0.5f, 0.0f}; 
 
 #define PI 3.141592f
 
@@ -36,18 +35,18 @@ bool useVBO = false;
 
 // Window size
 
-int width = 800;
+int width = 800;       
 int height = 800;
 
 // view parameters
 
-GLfloat viewPosition[4] = {0.0f, 5.0f, 8.0f, 1.0f};
-GLfloat viewDirection[4] = {-0.0f, -5.0f, -8.0f, 0.0f};
+GLfloat viewPosition[4] = {0.0f, 5.0f, 8.0f, 1.0f};  
+GLfloat viewDirection[4] = {-0.0f, -5.0f, -8.0f, 0.0f};  
 GLfloat viewAngle = 40.0f;
 GLfloat viewNear = 0.2f;
 GLfloat viewFar = 100000.0f;
 
-GLfloat lightPosition[4] = {0, 0, 1 ,0};
+GLfloat lightPosition[4] = {0, 0, 1 ,0};  
 
 vector<int> indices;
 vector<Vector> positions;
@@ -67,11 +66,11 @@ Vector startP2(-0.5f, 0.0f, -0.5f*sqrt(3.0f));
 Vector startP3(0.0f, 1.0f, 0.0f);
 
 int globalIndex = 0;
-int maxLevel = 8;
+int maxLevel = 10;
 
 void generateTriangle(Vector p0, Vector p1, Vector p2)
 {
-	Triangle tri = Triangle(p0, p1, p2);
+	Triangle tri = Triangle(p0, p1, p2); 
 	positions.push_back(p0);
 	positions.push_back(p1);
 	positions.push_back(p2);
@@ -89,7 +88,7 @@ void generateTriangle(Vector p0, Vector p1, Vector p2)
 }
 
 void generateTetraeders(Vector p0, Vector p1, Vector p2, Vector p3, int level)
-{
+{	
 	if (level == maxLevel)
 		return;
 
@@ -104,7 +103,7 @@ void generateTetraeders(Vector p0, Vector p1, Vector p2, Vector p3, int level)
 	Vector e3 = p3 - p0;
 	Vector e4 = p3 - p2;
 	Vector e5 = p3 - p1;
-
+	
 	Vector newP0, newP1, newP2, newP3;
 
 	newP0 = p0;
@@ -143,16 +142,30 @@ void generateGeometryVertexBuffer()
 	// - Generieren eines Buffer Handles
 	// - Binden des Buffers (Target = GL_ARRAY_BUFFER)
 	// - Buffer Daten in den VRAM kopieren (Usage = GL_STATIC_DRAW)
-	// - Buffer nicht mehr binden (stattdessen eine 0 binden).
-
+	// - Buffer nicht mehr binden (stattdessen eine 0 binden).	
+	glGenBuffers(1, &positionBufferHandle);
+	glBindBuffer(GL_ARRAY_BUFFER, positionBufferHandle);
+	glBufferData(GL_ARRAY_BUFFER, positions.size() * 4 * 3, positions.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
 	// TODO: Erzeugen eines Vertex Buffer Objects für die Normalen.
-
+	glGenBuffers(1, &normalBufferHandle);
+	glBindBuffer(GL_ARRAY_BUFFER, normalBufferHandle);
+	glBufferData(GL_ARRAY_BUFFER, normals.size() * 4 * 3, normals.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
 	// TODO: Erzeugen eines Indexbuffers. Dies funktioniert genauso, wie die Erzeugung eines VBOs (Hinweis: Target = GL_ELEMENT_ARRAY_BUFFER).
-
+	glGenBuffers(1, &indexBufferHandle);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferHandle);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * 4, indices.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	
 	// TODO: Erzeugen eines Vertex Array Objects (VAOs).
 	// VAOs werden genutzt um der GPU mitzuteilen, von welchen VBOs die Daten für das Rendering genommen werden sollen.
 	// - Generieren eines Vertex Array Handles
+	glGenVertexArrays(1, &vertexArrayHandle);
 	// - Binden des Vertex-Array Handles
+	glBindVertexArray(vertexArrayHandle);
 		// Binden des VBOs, von dem die Positionen geholt werden sollen
 		// mit glVertexAttribPointer der GPU mitteilen, wie das VBO interpretiert werden soll. Im folgenden werden die Parameter kurz erklärt.
 		//   Der erste Parameter ist der Index des Vertex-Attributes. (0=Position, 2=Normale)
@@ -160,25 +173,42 @@ void generateGeometryVertexBuffer()
 		//   Die Eingabedaten müssen nicht normalisiert werden.
 		//   Der Stride misst den Offset in Byte zwischen zwei Datenwerten im Buffer.
 		//   Der letzte Wert ist der BufferOffset, der angewendet werden soll. In unserem Beispiel ist er immer 0, da wir für jedes Attribut einen eigenes VBO nutzen.
-		// Binden des VBOs, von dem die Positionen geholt werden sollen
+		glBindBuffer(GL_ARRAY_BUFFER, positionBufferHandle);
+		glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, NULL);
+		glEnableVertexAttribArray(0);//glEnableVertexAttribArray(positionBufferHandle);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		// Binden des VBOs, von dem die Normalen geholt werden sollen
 		// wieder glVertexAttribPointer nutzen..
 		// Aufräumen: Den Wert '0' als Vertex Buffer Object binden. (kein VBO mehr aktiv)
 		// Zuletzt muss mitgeteilt werden, welche Vertex-Attribut Indices genutzt werden sollen. Dies geschieht mit glEnableVertexAttribArray.
+		glBindBuffer(GL_ARRAY_BUFFER, normalBufferHandle);
+		glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, NULL);
+		glEnableVertexAttribArray(2);//glEnableVertexAttribArray(normalBufferHandle);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	// Aufräumen: Unbinden des Vertex Array Objects (eine 0 binden).
+	glBindVertexArray(0);
 }
 
 
 void drawGeometryVertexBuffer()
 {
 	// TODO: Binden des VAOs. (Die GPU weiß nun, wo sie die Geometriedaten herzuholen hat.)
+	glBindVertexArray(vertexArrayHandle);
 	// TODO: Index-Buffer binden.
-
-	// TODO: mit glDrawElements die Triangles rendern.
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferHandle);
+	
+	// TODO: mit glDrawElements die Triangles rendern. 
 	// Hinweis: Der Type-Parameter definiert den im Index Buffer verwendeten Datentyp.
 	//   Der letzte Parameter dieses DrawCalls ist NULL, da der Index-Buffer von Beginn an gelesen werden soll.
 	unsigned int numTriangles = positions.size();
+	glDrawElements(GL_TRIANGLES, numTriangles, GL_UNSIGNED_INT, NULL);
 
-	// TODO: Unbinden von VAO und Index-Buffer
+	// TODO: Unbinden von VAO und Index-Buffer	
+	glBindVertexArray(0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	
 }
 
 // calc the view position and direction from theta/phi coordinates
@@ -187,13 +217,50 @@ void calcViewerCamera(float theta, float phi, float r)
     float x = r * sin(theta) * cos(phi);
     float y = r * cos(theta);
     float z = r * sin(theta) * sin(phi);
-
+ 
 	viewPosition[0] = center[0] + x;
 	viewPosition[1] = center[1] + y;
 	viewPosition[2] = center[2] + z;
 	viewDirection[0] = -x;
 	viewDirection[1] = -y;
 	viewDirection[2] = -z;
+}
+
+void drawSimpleAndSlow()
+{
+	glBegin(GL_TRIANGLES);
+	for (unsigned int i = 0 ; i < positions.size() ; i += 3) {
+		glNormal3fv(&normals[i][0]);
+		glVertex3fv(&positions[i][0]);
+		glNormal3fv(&normals[i+1][0]);
+		glVertex3fv(&positions[i+1][0]);
+		glNormal3fv(&normals[i+2][0]);
+		glVertex3fv(&positions[i+2][0]);
+	}
+	glEnd();
+}
+
+void drawDisplayList()
+{
+	if(!glIsList(1))
+	{
+		glNewList(1, GL_COMPILE);
+		glBegin(GL_TRIANGLES);
+		for (unsigned int i = 0 ; i < positions.size() ; i += 3) {
+			glNormal3fv(&normals[i][0]);
+			glVertex3fv(&positions[i][0]);
+			glNormal3fv(&normals[i+1][0]);
+			glVertex3fv(&positions[i+1][0]);
+			glNormal3fv(&normals[i+2][0]);
+			glVertex3fv(&positions[i+2][0]);
+		}
+		glEnd();
+		glEndList();
+	}
+	else
+	{
+		glCallList(1);
+	}
 }
 
 void display()
@@ -207,12 +274,12 @@ void display()
 
 	// now render from camera view
 	glLoadIdentity();
-	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-
+ 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+  				
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	gluLookAt(viewPosition[0], viewPosition[1], viewPosition[2],
-			  viewPosition[0] + viewDirection[0], viewPosition[1] + viewDirection[1], viewPosition[2] + viewDirection[2],
+			  viewPosition[0] + viewDirection[0], viewPosition[1] + viewDirection[1], viewPosition[2] + viewDirection[2], 
 			  0, 1, 0);
 
 
@@ -221,18 +288,31 @@ void display()
 
 		drawGeometryVertexBuffer();
 	}
-	else {  // simple and slow drawing
+	else {  
+		// simple and slow drawing
+		//drawSimpleAndSlow();
 
-		glBegin(GL_TRIANGLES);
-		for (unsigned int i = 0 ; i < positions.size() ; i += 3) {
-			glNormal3fv(&normals[i][0]);
-			glVertex3fv(&positions[i][0]);
-			glNormal3fv(&normals[i+1][0]);
-			glVertex3fv(&positions[i+1][0]);
-			glNormal3fv(&normals[i+2][0]);
-			glVertex3fv(&positions[i+2][0]);
+		// using display list
+		//drawDisplayList(); // DAFUQ!?! WIESO IST DAS SOOOOOO VIEL LANGSAMER!??
+		if(!glIsList(1))
+		{
+			glNewList(1, GL_COMPILE);
+			glBegin(GL_TRIANGLES);
+			for (unsigned int i = 0 ; i < positions.size() ; i += 3) {
+				glNormal3fv(&normals[i][0]);
+				glVertex3fv(&positions[i][0]);
+				glNormal3fv(&normals[i+1][0]);
+				glVertex3fv(&positions[i+1][0]);
+				glNormal3fv(&normals[i+2][0]);
+				glVertex3fv(&positions[i+2][0]);
+			}
+			glEnd();
+			glEndList();
 		}
-		glEnd();
+		else
+		{
+			glCallList(1);
+		}/**/
 
 	}
 
@@ -252,14 +332,14 @@ void mouseMotion(int x, int y)
 {
 	float deltaX = x - oldX;
 	float deltaY = y - oldY;
-
+	
 	if (motionState == ROTATE) {
 		theta -= 0.002f * deltaY;
 
 		if (theta < 0.002f) theta = 0.002f;
 		else if (theta > PI - 0.002f) theta = PI - 0.002f;
 
-		phi += 0.002f * deltaX;
+		phi += 0.002f * deltaX;	
 		if (phi < 0) phi += 2*PI;
 		else if (phi > 2*PI) phi -= 2*PI;
 	}
@@ -305,8 +385,8 @@ void initGL()
 	// init some GL state variables
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHTING);               
+	glEnable(GL_LIGHT0);                 
 
 	glViewport(0,0,width,height);
 
@@ -334,7 +414,7 @@ int main(int argc, char** argv)
 	if(glewInit() != GLEW_OK)
 	   cout << "GLEW init failed!" << endl;
 
-	// Register GLUT callback functions
+	// Register GLUT callback functions   
 	glutDisplayFunc(display);
 	glutIdleFunc(display);
 	// glutSpecialFunc(special);

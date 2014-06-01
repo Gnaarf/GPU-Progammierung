@@ -1,0 +1,90 @@
+
+#version 400
+
+// number of vertices. 
+layout(vertices = 3) out;
+
+// input from the vertex shader.
+in vec3 vs_out_Position[];
+in vec3 vs_out_Normal[];
+in vec2 vs_out_TexCoord[];
+
+// output of the hull shader.
+out vec3 hs_out_Position[];
+out vec3 hs_out_Normal[];
+out vec2 hs_out_TexCoord[];
+
+// all lower distances get maximum tesselation
+const float MAX_TESS_DIST = 200;
+// all higher distances get minimum tesselation
+const float MIN_TESS_DIST = 1200;
+
+const float MIN_INSIDE_TESS = 1;
+const float MIN_OUTSIDE_TESS = 1;
+
+float camDist = 0;
+float beta = 0;
+
+layout(std140) uniform TessFactors
+{
+	float insideTess;
+	float outsideTess;
+	float alpha;
+};
+
+layout(std140) uniform GlobalMatrices
+{
+	mat4 Projection;
+	mat4 View;
+};
+
+uniform vec3 cameraPosition;
+
+out float debug_hs_out_camDist[];
+
+void main()
+{
+    if (gl_InvocationID == 0) // Nur ein Thread muss dem Tessellator die Tessellation Factors mitteilen.
+	{	
+		mat4 viewModel = inverse(View);
+		vec3 cameraPos = vec3(viewModel[3]); 
+	 
+		vec3 meanVertPos = (vs_out_Position[0] + vs_out_Position[1] + vs_out_Position[2] )/3 ;
+
+		camDist = length(cameraPosition - meanVertPos);
+
+		beta = 0;
+
+		if(camDist > MAX_TESS_DIST && camDist < MIN_TESS_DIST)
+		{
+			beta = (camDist - MAX_TESS_DIST)/(MIN_TESS_DIST - MAX_TESS_DIST) ;
+		}
+		else if(camDist <= MAX_TESS_DIST)
+		{
+			beta = 0;
+		}
+		else
+		{
+			beta = 1;
+		}
+
+		float fin_insideTess = mix(insideTess,MIN_INSIDE_TESS,beta);
+		float fin_outsideTess = mix(outsideTess,MIN_OUTSIDE_TESS,beta);
+
+		// TODO: Dem Tessellator die Tessellation Factors mitteilen.
+		gl_TessLevelInner[0] = fin_insideTess;
+        gl_TessLevelInner[1] = fin_insideTess;
+        gl_TessLevelOuter[0] = fin_outsideTess;
+        gl_TessLevelOuter[1] = fin_outsideTess;
+        gl_TessLevelOuter[2] = fin_outsideTess; 
+
+		// Zusatzaufgabe: Nicht direkt die Werte aus dem UBO lesen, sondern Distanz-abhängig von der Kamera machen!
+    }
+	
+	// TODO: Position, Normale und Texturkoordinaten durchreichen
+	hs_out_Position[gl_InvocationID] = vs_out_Position[gl_InvocationID];
+	hs_out_Normal[gl_InvocationID] = vs_out_Normal[gl_InvocationID];
+	hs_out_TexCoord[gl_InvocationID] = vs_out_TexCoord[gl_InvocationID];
+
+	debug_hs_out_camDist[gl_InvocationID] = beta;
+}
