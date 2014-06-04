@@ -7,32 +7,13 @@ varying out uvec4 result;
 void main()
 {	
 	// TODO: Tiefenwert von [0..1] auf {0..127} abbilden.
+
 	uint bitPos = uint(127 * gl_FragCoord.z);
 
-	//if( bitPos < 32)
-	//{
-	//	result.x = 1 << bitPos;
-	//	//result.x = 1 << 31;
-	//}
-	//else if(bitPos < 64)
-	//{
-	//	result.y = 1 << (bitPos - 32);
-	//	//result.y = 1 << 31;
-	//}
-	//	else if(bitPos < 96)
-	//{
-	//	result.z = 1 << (bitPos - 64);
-	//	//result.z = 1 << 31;
-	//}
-	//else
-	//{
-	//	result.w = 1 << (bitPos - 96);
-	//}
-	
-	result.x = 1 << 12;
-	result.y = 1 << 22;
-	result.z = 1 << 9;
-	result.w = 1 << 1;
+	uint foo = uint(1);
+
+	uvec4 tmp = uvec4(0);
+	tmp.x = foo << 30;
 	
 	// Dies ergibt beispielsweise den Wert 42.
 	// Erzeugen Sie nun eine bit-Maske, in der das (im Beispiel) 42te Bit (von rechts gezählt) eine 1 ist und alle anderen eine 0.
@@ -41,5 +22,5 @@ void main()
 	//                  ^
 	//                Bit 42
 	// Weisen Sie diese bit-Maske der Variable 'result' zu.
-	//result = tmp;
+	result = tmp;
 }

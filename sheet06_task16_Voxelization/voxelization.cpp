@@ -222,50 +222,12 @@ void initGLSL()
 
 void drawVoxel(float x, float y, float z)
 {
-	float sizeX = 10* 1.0f/(float)(VOXEL_WIDTH);
-	float sizeY = 10* 1.0f/(float)(VOXEL_HEIGHT);
-	float sizeZ = 10* 1.0f/128.0f;
+	float sizeX = 1.0f/(float)(VOXEL_WIDTH);
+	float sizeY = 1.0f/(float)(VOXEL_HEIGHT);
+	float sizeZ = 1.0f/128.0f;
 
 	// TODO: Rendern Sie einen Cube mit dem Zentrum an der Position (x,y,z) und der Ausdehnung sizeX x sizeY x sizeZ.
 	// Um die Visualisierung deutlicher zu machen, sollen die Eckpunkte einer jeden Seitenwand unterschiedliche Farben haben.
-	GLfloat vert000[3] = {x - sizeX/2, y - sizeY/2, z - sizeZ/2};
-	GLfloat vert001[3] = {x - sizeX/2, y - sizeY/2, z + sizeZ/2};
-	GLfloat vert010[3] = {x - sizeX/2, y + sizeY/2, z - sizeZ/2};
-	GLfloat vert100[3] = {x + sizeX/2, y - sizeY/2, z - sizeZ/2};
-	GLfloat vert011[3] = {x - sizeX/2, y + sizeY/2, z + sizeZ/2};
-	GLfloat vert101[3] = {x + sizeX/2, y - sizeY/2, z + sizeZ/2};
-	GLfloat vert110[3] = {x + sizeX/2, y + sizeY/2, z - sizeZ/2};
-	GLfloat vert111[3] = {x + sizeX/2, y + sizeY/2, z + sizeZ/2};
-
-	GLfloat color00[3] = { 0.1, 0.1, 0.1};
-	GLfloat color01[3] = { 0.3, 0.3, 0.3};
-	GLfloat color10[3] = { 0.6, 0.6, 0.6};
-	GLfloat color11[3] = { 1, 1, 1};
-	
-	glBegin(GL_QUAD_STRIP);
-		glColor3fv(color11);
-		glVertex3fv(vert000);
-		glVertex3fv(vert001);
-		glVertex3fv(vert010);
-		glVertex3fv(vert011);
-		glVertex3fv(vert110);
-		glVertex3fv(vert111);
-		glVertex3fv(vert100);
-		glVertex3fv(vert101);
-		glVertex3fv(vert000);
-		glVertex3fv(vert001);
-	glEnd();
-	glBegin(GL_QUADS);
-		glColor3fv(color11);
-		glVertex3fv(vert001);
-		glVertex3fv(vert101);
-		glVertex3fv(vert011);
-		glVertex3fv(vert111);
-		glVertex3fv(vert000);
-		glVertex3fv(vert100);
-		glVertex3fv(vert010);
-		glVertex3fv(vert110);
-	glEnd();
 }
 
 void drawVoxelModel()
@@ -320,7 +282,6 @@ void display()
 
 	// TODO: Logik-Operation aktivieren. Anstatt den Farbwert in das Target zu schreiben, 
 	// werden die Komponenten des Pixels als UINTs aufgefasst und mit dem Pixel im FBO mit OR verknüpft ("reingeodert"...)	
-	glEnable(GL_LOGIC_OP);
 	glLogicOp(GL_OR);
 
 	// Projektionsmatrix setzen
@@ -345,9 +306,6 @@ void display()
 
 	// *************** read voxel texture for visualization *************
 	// TODO: Texturdaten der Voxelisierungs-Textur auslesen.
-	glReadPixels(0,0,VOXEL_WIDTH,VOXEL_HEIGHT,GL_RGBA_INTEGER,GL_UNSIGNED_INT, pixels);
-	//glGetTexImage(GL_TEXTURE_2D,0,GL_RGBA_INTEGER, GL_UNSIGNED_INT,pixels);
-
 
 	// **************** draw the voxel model ****************
 	// TODO: Viewport auf Bildschirmauflösung setzen und Backbuffer clearen.
@@ -356,8 +314,6 @@ void display()
 	
 	// TODO: Tiefentest an, Beleuchtung und Logik-Operationen aus.
 	glEnable(GL_DEPTH_TEST);
-	glDisable(GL_LIGHTING);
-	glDisable(GL_LOGIC_OP);
 	// Perspektivische Projektionsmatrix
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -380,20 +336,6 @@ void display()
 	// Verstrichene Zeit ausgeben.
 	int timeEnd = glutGet(GLUT_ELAPSED_TIME);
 	printf("Delay %4d\r",timeEnd - timeStart);
-	
-	
-	//glUseProgram(0);
-	//glClearColor(0,0,0,0);
-	//glClearDepth(0);
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	////calcViewerCamera(theta, phi, r);
-	//glMatrixMode(GL_MODELVIEW);
-	//glLoadIdentity();
-	//gluLookAt(1, 1, 1,
-	//	  0, 0, 0, 
-	//	  0, 1, 0);
-	//drawVoxel(0,0,0);
-	//glutSwapBuffers();
 }
 
 
