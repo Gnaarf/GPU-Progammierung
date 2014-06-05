@@ -226,8 +226,95 @@ void drawVoxel(float x, float y, float z)
 	float sizeY = 1.0f/(float)(VOXEL_HEIGHT);
 	float sizeZ = 1.0f/128.0f;
 
-	// TODO: Rendern Sie einen Cube mit dem Zentrum an der Position (x,y,z) und der Ausdehnung sizeX x sizeY x sizeZ.
+	// Done: Rendern Sie einen Cube mit dem Zentrum an der Position (x,y,z) und der Ausdehnung sizeX x sizeY x sizeZ.
 	// Um die Visualisierung deutlicher zu machen, sollen die Eckpunkte einer jeden Seitenwand unterschiedliche Farben haben.
+	GLfloat vert000[3] = {x - sizeX/2, y - sizeY/2, z - sizeZ/2};
+	GLfloat vert001[3] = {x - sizeX/2, y - sizeY/2, z + sizeZ/2};
+	GLfloat vert010[3] = {x - sizeX/2, y + sizeY/2, z - sizeZ/2};
+	GLfloat vert100[3] = {x + sizeX/2, y - sizeY/2, z - sizeZ/2};
+	GLfloat vert011[3] = {x - sizeX/2, y + sizeY/2, z + sizeZ/2};
+	GLfloat vert101[3] = {x + sizeX/2, y - sizeY/2, z + sizeZ/2};
+	GLfloat vert110[3] = {x + sizeX/2, y + sizeY/2, z - sizeZ/2};
+	GLfloat vert111[3] = {x + sizeX/2, y + sizeY/2, z + sizeZ/2};
+
+	GLfloat color00[3] = { 0.1, 0.1, 0.1};
+	GLfloat color01[3] = { 0.3, 0.3, 0.3};
+	GLfloat color10[3] = { 0.6, 0.6, 0.6};
+	GLfloat color11[3] = { 1, 1, 1};
+
+	GLfloat mat[3] = {1,1,1};
+	
+		glColor3fv(color00);
+		glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat);
+			/*glVertex3fv(vert000);
+			glVertex3fv(vert001);
+		glColor3fv(color11);
+			glVertex3fv(vert010);
+			glVertex3fv(vert011);
+		glColor3fv(color00);
+			glVertex3fv(vert110);
+			glVertex3fv(vert111);
+		glColor3fv(color11);
+			glVertex3fv(vert100);
+			glVertex3fv(vert101);
+		glColor3fv(color00);
+			glVertex3fv(vert000);
+			glVertex3fv(vert001);*/
+
+			glVertex3fv(vert001);
+		glColor3fv(color01);
+			glVertex3fv(vert000);
+		glColor3fv(color11);
+			glVertex3fv(vert100);
+		glColor3fv(color10);
+			glVertex3fv(vert101);
+
+		glColor3fv(color00);
+			glVertex3fv(vert100);
+		glColor3fv(color01);
+			glVertex3fv(vert101);
+		glColor3fv(color11);
+			glVertex3fv(vert111);
+		glColor3fv(color10);
+			glVertex3fv(vert110);
+
+		glColor3fv(color00);
+			glVertex3fv(vert111);
+		glColor3fv(color01);
+			glVertex3fv(vert110);
+		glColor3fv(color11);
+			glVertex3fv(vert010);
+		glColor3fv(color10);
+			glVertex3fv(vert011);
+
+		glColor3fv(color00);
+			glVertex3fv(vert010);
+		glColor3fv(color01);
+			glVertex3fv(vert011);
+		glColor3fv(color11);
+			glVertex3fv(vert001);
+		glColor3fv(color10);
+			glVertex3fv(vert000);
+
+	glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat);
+		glColor3fv(color00);
+			glVertex3fv(vert011);
+		glColor3fv(color01);
+			glVertex3fv(vert001);
+		glColor3fv(color11);
+			glVertex3fv(vert101);
+		glColor3fv(color10);
+			glVertex3fv(vert111);
+
+		glColor3fv(color00);
+			glVertex3fv(vert010);
+		glColor3fv(color01);
+			glVertex3fv(vert000);
+		glColor3fv(color11);
+			glVertex3fv(vert100);
+		glColor3fv(color10);
+			glVertex3fv(vert110);
+
 }
 
 void drawVoxelModel()
@@ -239,19 +326,44 @@ void drawVoxelModel()
 
 		for (int x = 0 ; x < VOXEL_WIDTH ; x++) {
 
+			bool in = false;
+			int inz = 0;
+			int ink = 0;
+
+			// process bitstring
 			for (int k = 3 ; k >= 0 ; k--) {	// a,b,g,r
 
 				unsigned int bitCode = pixels[i];	// 32-Bit Komponente lesen
 				i++;
 
-				for (int z = 0 ; z < 32 ; z++) {	// jedes Bit einzeln durchgehen
+				for (int z = 31 ; z >= 0 ; z--) {	// jedes Bit einzeln durchgehen
 					
-					if (bitCode & 1) {	// wenn Bit gesetzt, zeichne ein Voxel
-
-						drawVoxel(x/(float)(VOXEL_WIDTH) - 0.5f, y/(float)(VOXEL_HEIGHT) - 0.5f, 0.25f*(k-2 + z/32.0f));
+					if (bitCode & (1<<31)) {	// wenn Bit gesetzt, zeichne ein Voxel
+						//if(in)
+						//{
+						//	for(ink; ink >= k; --ink)
+						//	{
+						//		for(inz; inz >= 0 ; --inz)
+						//		{
+						//			if(ink*32+inz <= k*32+z)
+						//			{
+						//				break;
+						//			}
+						//			drawVoxel(x/(float)(VOXEL_WIDTH) - 0.5f, y/(float)(VOXEL_HEIGHT) - 0.5f, (ink*32+inz)/128.0f  - 0.5f); //0.25f*(k-2 + inz/32.0f));
+						//		}
+						//		inz = 31;
+						//	}
+						//}
+						//else
+						//{
+						//	inz = z;
+						//	ink = k;
+						//}
+						//in = !in;
+						drawVoxel(x/(float)(VOXEL_WIDTH) - 0.5f, y/(float)(VOXEL_HEIGHT) - 0.5f, (k*32+z)/128.0f - 0.5f);//0.25f*(k-2 + z/32.0f));
 					}
 
-					bitCode = bitCode >> 1;	// das nächste Bit betrachten
+					bitCode = bitCode << 1;	// das nächste Bit betrachten
 				}
 			}
 		}
@@ -267,22 +379,23 @@ void display()
 
 	// ********** voxelize teapot into integer texture ************
 	
-	// TODO: FBO binden, in das gerendert werden soll. Clearen Sie das FBO und binden Sie den Voxelisierungs-Shader.
-	glBindBuffer(GL_FRAMEBUFFER, voxelizationFB);
+	// Done: FBO binden, in das gerendert werden soll. Clearen Sie das FBO und binden Sie den Voxelisierungs-Shader.
+	glBindFramebuffer(GL_FRAMEBUFFER, voxelizationFB);
 	glClearColor(0,0,0,0);
-	glClearDepth(0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	//glClearDepth(0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT /*| GL_STENCIL_BUFFER_BIT*/);
 	glUseProgram(shaderProgramVoxelization);
 	
-	// TODO: Viewport auf Auflösung der Voxel-Textur setzen.	
+	// Done: Viewport auf Auflösung der Voxel-Textur setzen.	
 	glViewport(0,0,VOXEL_WIDTH,VOXEL_HEIGHT);
-	
-	// TODO: Tiefentest deaktivieren.
+	// Done: Tiefentest deaktivieren.
 	glDisable(GL_DEPTH_TEST);
-
-	// TODO: Logik-Operation aktivieren. Anstatt den Farbwert in das Target zu schreiben, 
+	
+	// Done: Logik-Operation aktivieren. Anstatt den Farbwert in das Target zu schreiben, 
 	// werden die Komponenten des Pixels als UINTs aufgefasst und mit dem Pixel im FBO mit OR verknüpft ("reingeodert"...)	
-	glLogicOp(GL_OR);
+	glEnable(GL_COLOR_LOGIC_OP);
+	glLogicOp(GL_XOR);
+
 
 	// Projektionsmatrix setzen
 	glMatrixMode(GL_PROJECTION);
@@ -299,21 +412,32 @@ void display()
 
 	// Kanne zeichnen
 	glutSolidTeapot(0.7);
+	//glutSolidTorus(0.1,0.6,20,20);
 	
-	// TODO: Rendern in FBO beenden (Backbuffer wieder aktiv) und Fixed-Function Pipeline aktivieren.
-	glBindBuffer(GL_FRAMEBUFFER, 0);
+	// Done: Rendern in FBO beenden (Backbuffer wieder aktiv) und Fixed-Function Pipeline aktivieren.
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glUseProgram(0);
 
+
 	// *************** read voxel texture for visualization *************
-	// TODO: Texturdaten der Voxelisierungs-Textur auslesen.
+	// Done: Texturdaten der Voxelisierungs-Textur auslesen.
+	GLenum err = glGetError();
+	err = glGetError();
+	// Warum geht das nicht? glReadPixels(0,0,VOXEL_WIDTH,VOXEL_HEIGHT,GL_RGBA_INTEGER, GL_UNSIGNED_INT, pixels);
+	glGetTexImage(GL_TEXTURE_2D, 0,GL_RGBA_INTEGER, GL_UNSIGNED_INT, pixels);
+	err = glGetError();
 
 	// **************** draw the voxel model ****************
-	// TODO: Viewport auf Bildschirmauflösung setzen und Backbuffer clearen.
-	glViewport(0,0,PIC_WIDTH,PIC_HEIGHT);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	
-	// TODO: Tiefentest an, Beleuchtung und Logik-Operationen aus.
+	// Done Viewport auf Bildschirmauflösung setzen und Backbuffer clearen.
+	glViewport(0,0,PIC_WIDTH, PIC_HEIGHT);
+	glClearColor(0,0,0,0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// Done: Tiefentest an, Beleuchtung und Logik-Operationen aus.
 	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_LIGHTING);
+	glDisable(GL_COLOR_LOGIC_OP);
+	
 	// Perspektivische Projektionsmatrix
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -329,7 +453,7 @@ void display()
 
 	// Voxel Model zeichnen
 	drawVoxelModel();
-
+	
 	// Szene ist fertig, Buffer swappen.
 	glutSwapBuffers();
 
@@ -338,7 +462,34 @@ void display()
 	printf("Delay %4d\r",timeEnd - timeStart);
 }
 
+void debugDisplay()
+{
+	glUseProgram(0);
+	glClearColor(0,0,0,0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	glEnable(GL_DEPTH_TEST);
+	/*glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	GLfloat lightpos[4] = {1,1,0,1};
+	glLightfv(GL_LIGHT0, GL_POSITION,lightpos);*/
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(viewAngle, 1.0f, viewNear, viewFar);	
+
+	glPolygonMode(GL_BACK, GL_FILL);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	calcViewerCamera(theta, phi, r);
+	gluLookAt(viewPosition[0], viewPosition[1], viewPosition[2],
+			  viewPosition[0] + viewDirection[0], viewPosition[1] + viewDirection[1], viewPosition[2] + viewDirection[2], 
+			  0, 1, 0);
+	drawVoxel(0,0,0);
+
+	glutSwapBuffers();
+}
 // use a virtual trackball as mouse control
 void mouseMotion(int x, int y)
 {
@@ -410,6 +561,5 @@ int main(int argc, char** argv)
                 
     return 0;
 }
-
 
 
