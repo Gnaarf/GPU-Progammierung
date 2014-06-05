@@ -28,7 +28,7 @@
 
 ### 3 CUDA files 
 # don't ignore CUDA files
-!.cu
+!*.cu
 
 ### 4 CMakeLists.txt ##
 # don't ignore CMakeLists.txt files
