@@ -1,5 +1,7 @@
 // ******* GPU Histogram ********
 
+#include <windows.h>
+
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 
@@ -20,9 +22,9 @@ using namespace std;
 #define ROTATE 1
 #define MOVE 2
 
-float center[3] = {0.0f, 0.0f, 0.0f};
-GLfloat viewPosition[4] = {0.0, 0.0, 3.0, 1.0};
-GLfloat viewDirection[4] = {-0.0, -0.0, -1.0, 0.0};
+float center[3] = {0.0f, 0.0f, 0.0f}; 
+GLfloat viewPosition[4] = {0.0, 0.0, 3.0, 1.0};  
+GLfloat viewDirection[4] = {-0.0, -0.0, -1.0, 0.0};  
 GLfloat viewAngle = 45.0f;
 GLfloat viewNear = 0.01f;
 GLfloat viewFar = 10000.0f;
@@ -48,7 +50,7 @@ GLuint createImageFB = 0;
 GLuint createHistogramFB = 0;
 
 // GLSL Variables (Shader Ids, Locations, ...)
-GLuint vertexShaderCreateHistogram;
+GLuint vertexShaderCreateHistogram;	
 GLuint fragmentShaderCreateHistogram;
 GLuint shaderProgramCreateHistogram;
 
@@ -63,7 +65,7 @@ void printShaderInfoLog(GLuint shader)
     GLsizei charsWritten  = 0;
     char *infoLog;
 
-	glGetShaderiv(shader, GL_INFO_LOG_LENGTH,&infologLength);
+	glGetShaderiv(shader, GL_INFO_LOG_LENGTH,&infologLength);		
 	infoLog = (char *)malloc(infologLength);
 	glGetShaderInfoLog(shader, infologLength, &charsWritten, infoLog);
 	printf("%s\n",infoLog);
@@ -95,7 +97,7 @@ string readFile(string fileName)
 		while (!file.eof()){
 			getline (file,line);
 			line += "\n";
-			fileContent += line;
+			fileContent += line;					
 		}
 		file.close();
 	}
@@ -106,18 +108,18 @@ string readFile(string fileName)
 }
 
 
-// Hilfsfunktion um Vertex & Fragment Shader einzuladen
+// Hilfsfunktion um Vertex & Fragment Shader einzuladen 
 void loadShaderProgram(GLuint &shaderProgram, GLuint &vertexShader, char* vertexShaderName, GLuint &fragmentShader, char* fragmentShaderName)
 {
 	// Create empty shader object (vertex shader)
 	vertexShader = glCreateShader(GL_VERTEX_SHADER);
 
-	// Read vertex shader source
+	// Read vertex shader source 
 	string shaderSource = readFile(vertexShaderName);
 	const char* sourcePtr = shaderSource.c_str();
 
 	// Attach shader code
-	glShaderSource(vertexShader, 1, &sourcePtr, NULL);
+	glShaderSource(vertexShader, 1, &sourcePtr, NULL);	
 
 	// Compile
 	glCompileShader(vertexShader);
@@ -126,19 +128,19 @@ void loadShaderProgram(GLuint &shaderProgram, GLuint &vertexShader, char* vertex
 	// Create empty shader object (fragment shader)
 	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 
-	// Read vertex shader source
+	// Read vertex shader source 
 	shaderSource = readFile(fragmentShaderName);
 	sourcePtr = shaderSource.c_str();
 
 	// Attach shader code
-	glShaderSource(fragmentShader, 1, &sourcePtr, NULL);
+	glShaderSource(fragmentShader, 1, &sourcePtr, NULL);	
 
 	// Compile
 	glCompileShader(fragmentShader);
 	printShaderInfoLog(fragmentShader);
 
 	// Create shader program
-	shaderProgram = glCreateProgram();
+	shaderProgram = glCreateProgram();	
 
 	// Attach shader
 	glAttachShader(shaderProgram, vertexShader);
@@ -162,7 +164,7 @@ int initFBOTextures()
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
-	// Depth Buffer Textur anlegen
+	// Depth Buffer Textur anlegen 
 	glGenTextures (1, &depthTextureId);
 	glBindTexture (GL_TEXTURE_2D, depthTextureId);
 	glTexImage2D (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, PIC_WIDTH, PIC_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
@@ -178,7 +180,7 @@ int initFBOTextures()
 	// texture for viewer position
 	glGenTextures (1, &histogramTextureId);
 	glBindTexture (GL_TEXTURE_2D, histogramTextureId);
-	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB32F_ARB, PIC_WIDTH, PIC_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB32F_ARB, 256, 1, 0, GL_RGB, GL_FLOAT, NULL);	//###!!!###
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	// MRT FBO for position/normal/color
@@ -215,7 +217,7 @@ void calcViewerCamera(float theta, float phi, float r)
     float x = r * sin(theta) * cos(phi);
     float y = r * cos(theta);
     float z = r * sin(theta) * sin(phi);
-
+ 
 	viewPosition[0] = center[0] + x;
 	viewPosition[1] = center[1] + y;
 	viewPosition[2] = center[2] + z;
@@ -231,7 +233,7 @@ void initGLSL()
 	glUseProgram(shaderProgramCreateHistogram);
 
 	imageTextureLocation = glGetUniformLocation( shaderProgramCreateHistogram, "imageTexture" );
-	glUniform1i(imageTextureLocation, 0);
+	glUniform1i(imageTextureLocation, 0);   
 }
 
 void drawScene()
@@ -242,20 +244,109 @@ void drawScene()
 
 	// Perspektivische Projektionsmatrix verwenden.
 	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(viewAngle, 1.0f, viewNear, viewFar);
-
+	glLoadIdentity();	
+	gluPerspective(viewAngle, 1.0f, viewNear, viewFar);	
+	
 	// View-Matrix setzen
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	calcViewerCamera(theta, phi, r);
 	gluLookAt(viewPosition[0], viewPosition[1], viewPosition[2],
-			  viewPosition[0] + viewDirection[0], viewPosition[1] + viewDirection[1], viewPosition[2] + viewDirection[2],
-			  0, 1, 0);
+			  viewPosition[0] + viewDirection[0], viewPosition[1] + viewDirection[1], viewPosition[2] + viewDirection[2], 
+			  0, 1, 0);	
 
 	// Teekanne mit Fixed-Function-Pipeline rendern.
 	glUseProgram( 0 );
 	glutSolidTeapot(1.0);
+}
+
+float interpolate(float start, float end, float interpolationVariable){
+	
+	return start*(1-interpolationVariable) + end*(interpolationVariable);
+}
+
+void setUpPixelWiseDrawingMatrices(){	//###!!!###
+
+	// Orthografische Projektion nutzen, damit die Vertices auch korrekt auf die Pixel fallen.
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0, PIC_WIDTH, 0, PIC_HEIGHT, -1, 1);
+	
+	// Einheitsmatrix als Model-View Matrix verwenden. (Blick in z-Richtung)
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+}
+
+void drawVertexForEachPixel(){	//###!!!###
+
+	setUpPixelWiseDrawingMatrices();
+
+	glBegin(GL_POINTS);
+
+	for(int pixelY = 0; pixelY<PIC_HEIGHT; pixelY++){
+		for(int pixelX = 0; pixelX<PIC_WIDTH; pixelX++){
+
+			// texture coordinate [0, 1]^2
+			glTexCoord2f(
+					interpolate(0.f, 1.f, float(pixelX)/(PIC_WIDTH-1)),
+					interpolate(0.f, 1.f, float(pixelY)/(PIC_HEIGHT-1))
+			);
+
+			// position [0, PIC_WIDTH-1] x [0, PIC_HEIGHT-1]
+			glVertex2i(
+					pixelX+0.5,
+					pixelY+0.5
+			);
+		}
+	}
+
+	glEnd();
+}
+
+// ********* Histogrammdaten erzeugen, indem für jedes Pixel ein Vertex gerendert wird. Der Vertex Shader liest den Farbwert aus und berechnet seinen Position, abhängig von der Helligkeit des gelesenen Pixels. **********
+void determineHistogramData(float* destination){	//###!!!###
+
+	//setUpPixelWiseDrawingMatrices();
+
+	// TODO: Additives Blending aktivieren (mit jedem ankommenden Pixel wird der Counter um 1 erhöht)
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_ONE, GL_ONE);
+	glBlendEquation(GL_ADD);
+	
+	// TODO: Tiefentest und Beleuchtung abschalten
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_LIGHTING);
+	
+	// TODO: Histogram-Shader für jedes Pixel des Bildes ausführen.
+	glUseProgram(shaderProgramCreateHistogram);
+	drawVertexForEachPixel();
+
+	// Histogramm-Daten von VRAM zu RAM streamen (in das Array hPixels)
+	glReadPixels(0, 0, 256, 1, GL_RGB, GL_FLOAT, destination);
+
+	// TODO: Blending abschalten
+	glDisable(GL_BLEND);
+
+}
+
+void drawHistogram(float* buckets, unsigned int numberOfElements, unsigned int stride){	//###!!!###
+
+	setUpPixelWiseDrawingMatrices();
+
+	float histogramHeight = PIC_HEIGHT;
+	float numberOfPixels = PIC_WIDTH*PIC_HEIGHT;
+
+	glBegin(GL_LINES);
+	for(unsigned int i = 0; i<numberOfElements; i++){
+
+		float numberOfOccurrences = buckets[i*stride];
+		float ratio = numberOfOccurrences / numberOfPixels;
+		float barHeight = histogramHeight*ratio*50;
+
+		glVertex2f(i+0.5, 0);
+		glVertex2f(i+0.5, barHeight);
+	}
+	glEnd();
 }
 
 // OpenGL display Funktion
@@ -266,36 +357,21 @@ void display()
 	int timeStart = glutGet(GLUT_ELAPSED_TIME);
 
 	// ********* Teekanne in FBO rendern **********
-
+		
 	// FBO binden, in das gerendert werden soll.
-	glBindFramebuffer (GL_FRAMEBUFFER, createImageFB);      // activate fbo
+	glBindFramebuffer (GL_FRAMEBUFFER, createImageFB);      // activate fbo                 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// Teekanne rendern.
 	drawScene();
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, createHistogramFB);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// ********* Histogrammdaten erzeugen, indem für jedes Pixel ein Vertex gerendert wird. Der Vertex Shader liest den Farbwert aus und berechnet seinen Position, abhängig von der Helligkeit des gelesenen Pixels. **********
+	determineHistogramData(hPixels);
 
-	// Orthografische Projektion nutzen, damit die Vertices auch korrekt auf die Pixel fallen.
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, PIC_WIDTH, 0, PIC_HEIGHT, -1, 1);
 
-	// Einheitsmatrix als Model-View Matrix verwenden. (Blick in z-Richtung)
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	// TODO: Additives Blending aktivieren (mit jedem ankommenden Pixel wird der Counter um 1 erhöht)
-
-	// TODO: Tiefentest und Beleuchtung abschalten
-
-	// TODO: Histogram-Shader für jedes Pixel des Bildes ausführen.
-
-	// Histogramm-Daten von VRAM zu RAM streamen (in das Array hPixels)
-	glReadPixels(0, 0, 256, 1, GL_RGB, GL_FLOAT, hPixels);
-
-	// TODO: Blending abschalten
-
+	
 	// ********* Teekanne in Backbuffer rendern **********
 
 	// Rendern in das FBO beenden. Fortan wird wieder in den Backbuffer gerendert.
@@ -307,11 +383,12 @@ void display()
 
 	// ********* Histogramm zeichnen **********
 
-	// TODO: Render Sie die Liniensegmente. Sie können ModelView- und Projection-Matrix auf
+	// TODO: Render Sie die Liniensegmente. Sie können ModelView- und Projection-Matrix auf 
 	// die Einheitsmatrix setzen und die Vertices direkt im Clipping-Space an die GPU schicken
 	// oder alternativ eine Projektionsmatrix bauen, die es Ihnen erlaubt, die Positionen in
 	// Bildschirmkoordinaten (0..PIC_WIDTH-1, 0..PIC_HEIGHT-1) anzugeben.
-
+	drawHistogram(hPixels, 256, 3);
+	
 	// Frame ist beendet, Buffer swappen.
 	glutSwapBuffers();
 
@@ -325,7 +402,7 @@ void mouseMotion(int x, int y)
 {
 	float deltaX = x - oldX;
 	float deltaY = y - oldY;
-
+	
 
 		if (motionState == ROTATE) {
 			theta -= 0.002f * deltaY;
@@ -333,7 +410,7 @@ void mouseMotion(int x, int y)
 			if (theta < 0.002f) theta = 0.002f;
 			else if (theta > PI - 0.002f) theta = PI - 0.002f;
 
-			phi += 0.002f * deltaX;
+			phi += 0.002f * deltaX;	
 			if (phi < 0) phi += 2*PI;
 			else if (phi > 2*PI) phi -= 2*PI;
 		}
@@ -380,7 +457,7 @@ int main(int argc, char** argv)
 	initGLSL();
 
 	glutMotionFunc(mouseMotion);
-	glutMouseFunc(mouse);
+	glutMouseFunc(mouse);	
 	glutDisplayFunc(display);
 	glutIdleFunc(display);
 
@@ -397,7 +474,7 @@ int main(int argc, char** argv)
 	glMatrixMode(GL_MODELVIEW);
 
     glutMainLoop();
-
+                
     return 0;
 }
 
