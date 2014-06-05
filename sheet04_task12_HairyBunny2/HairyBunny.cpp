@@ -22,6 +22,7 @@ float center[3];
 
 #define ROTATE 1
 #define MOVE 2
+#define DRAG 3
 
 float thetaStart = PI / 2.0f - 0.5f;
 float phiStart = PI / 2.0f;
@@ -108,9 +109,9 @@ void calcViewerCamera(float theta, float phi, float r)
 	viewPosition[0] = center[0] + x;
 	viewPosition[1] = center[1] + y;
 	viewPosition[2] = center[2] + z;
-	viewDirection[0] = -x;
-	viewDirection[1] = -y;
-	viewDirection[2] = -z;
+	viewDirection[0] = center[0] - x;
+	viewDirection[1] = center[1] -y;
+	viewDirection[2] = center[2] -z;
 
 	glLoadIdentity();
 	gluLookAt(viewPosition[0], viewPosition[1], viewPosition[2],
@@ -118,6 +119,9 @@ void calcViewerCamera(float theta, float phi, float r)
 				0, 1, 0);
 
 	// TODO: Updaten der View-Matrix. Die View-Matrix beginnt ab dem 17ten float des UBOs.
+	GLfloat viewMat[16];
+	glGetFloatv(GL_MODELVIEW_MATRIX,viewMat);
+	glBufferSubData(GL_UNIFORM_BUFFER,16*sizeof(GLfloat),16*sizeof(GLfloat),viewMat);
 }
 
 void mouseMotion(int x, int y)
@@ -139,6 +143,11 @@ void mouseMotion(int x, int y)
 	else if (motionState == MOVE) {
 		r += 0.03f * deltaY;
 		if (r < 0.1f) r = 0.1f;
+		calcViewerCamera(theta, phi, r);
+	}
+	else if (motionState == DRAG) {
+		center[0] += 0.001f * deltaX;
+		center[1] += 0.001f * deltaY;
 		calcViewerCamera(theta, phi, r);
 	}
 
@@ -163,6 +172,25 @@ void mouse(int button, int state, int x, int y)
 			motionState = MOVE;
 		}
 	}
+	else if (button == GLUT_MIDDLE_BUTTON) {
+		if (state == GLUT_DOWN) {
+			motionState = DRAG;
+		}
+	}
+}
+
+void keyboard(unsigned char key, int x, int y)
+{
+	// set parameters
+	switch (key) 
+	{       
+	case 'r':
+		center[0] = 0;
+		center[1] = 0;
+		center[2] = 0;
+		break;
+	}
+	glutPostRedisplay();
 }
 
 
@@ -175,11 +203,11 @@ void display(void)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// TODO: Den Block-Index des Uniform-Blocks suchen, das im Shader 'progSimple' den Namen "GlobalMatrices" trägt.
-	
+	GLuint uboIndex = glGetUniformBlockIndex(progHair,"GlobalMatrices");
 	// TODO: Binden Sie diesen Blockindex an den Binding Point 0.
-	
+	glUniformBlockBinding(progHair,uboIndex,0);
 	// TODO: Binden Sie das gesamte UBO an den Binding Point 0. Offset = 0 und Size = Größe der Daten im UBO.
-	
+	glBindBufferRange(GL_UNIFORM_BUFFER,0,uboCamera,0,2*4*4*sizeof(GLfloat));
 
 	// Bind VAO and IBO
 	glBindVertexArray(vaoBunny);
@@ -257,10 +285,13 @@ void initGL()
 	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 45.2776f);
 
 	// TODO: Uniform Buffer Object für die Camera Matrizen anlegen.
-	
+	glGenBuffers(1,&uboCamera);
+
 	// TODO: Das UBO binden (target = GL_UNIFORM_BUFFER)
-		
+	glBindBuffer(GL_UNIFORM_BUFFER,uboCamera);	
+
 	// TODO: Speicherplatz allokieren mit glBufferData. Reservieren Sie Platz für 2 4x4 Matrizen mit float-Einträgen. Data = NULL und Usage = GL_STREAM_DRAW
+	glBufferData(GL_UNIFORM_BUFFER, 2*4*4*sizeof(GLfloat),NULL,GL_STREAM_DRAW);
 
 	// Initialize camera
 	glMatrixMode(GL_PROJECTION);
@@ -270,6 +301,9 @@ void initGL()
 	// TODO: query projection matrix and update the vbo.
 		// Getten Sie sich die Projektionsmatrix und kopieren Sie sie auf die ersten 16 float Werte des UBOs. Beachten Sie, das das UBO dazu gebunden sein muss!
 		// Verwenden Sie dazu die Befehle glGetFloatv und glBufferSubData
+	GLfloat projection[16];
+	glGetFloatv(GL_PROJECTION_MATRIX,projection);
+	glBufferSubData(GL_UNIFORM_BUFFER,0,16*sizeof(GLfloat),projection);
 	
 	// Viewmatrix initialisieren
 	glMatrixMode(GL_MODELVIEW);
@@ -315,7 +349,7 @@ void initGLSL()
 	GLuint geometryShaderHair = glCreateShader(GL_GEOMETRY_SHADER);
 
 	// Read vertex shader source 
-	shaderSource = readFile("hair.geom");
+	shaderSource = readFile("hair2.geom");
 	sourcePtr = shaderSource.c_str();
 
 	// Attach shader code
@@ -401,7 +435,7 @@ int main(int argc, char** argv)
 	initGLSL();
 
 	// Register callback functions   
-	// glutKeyboardFunc(keyboard);
+	glutKeyboardFunc(keyboard);
 	glutMotionFunc(mouseMotion);
 	glutMouseFunc(mouse);
 	glutDisplayFunc(display);

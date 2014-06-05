@@ -1,13 +1,10 @@
-project(sheet05_task13_Tessellation)
+project(sheet06_task16_Voxelization)
 cmake_minimum_required(VERSION 2.8)
 
-set(SRC_LIST elephant.cpp)
-set(SRC_LIST Tessellation.cpp ${SRC_LIST})
+set(SRC_LIST voxelization.cpp)
 
-set(SHADER_FILES Tessellation.vert)
-set(SHADER_FILES Tessellation.dom ${SHADER_FILES})
-set(SHADER_FILES Tessellation.hull ${SHADER_FILES})
-set(SHADER_FILES Tessellation.frag ${SHADER_FILES})
+set(SHADER_FILES voxelization.vert)
+set(SHADER_FILES voxelization.frag ${SHADER_FILES})
 file(COPY ${SHADER_FILES} DESTINATION ${CMAKE_BINARY_DIR})
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/../CMakeFindFunctions ${CMAKE_MODULE_PATH})
