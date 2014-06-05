@@ -26,16 +26,20 @@
 !*.hull
 !*.vert
 
-### 3 CMakeLists.txt ##
+### 3 CUDA files 
+# don't ignore CUDA files
+!.cu
+
+### 4 CMakeLists.txt ##
 # don't ignore CMakeLists.txt files
 !CMakeLists.txt
 !*.cmake
 
-### 4 .gitignore ###
+### 5 .gitignore ###
 # don't ignore .gitignore files
 !.gitignore
 
-### 5 build directories
+### 6 build directories
 # This must be done in the end in order 
 # to not track files, that have been
 # copied into build directory.
