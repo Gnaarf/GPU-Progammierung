@@ -196,7 +196,7 @@ void display(void)
 
 	// update gravity system
 	if(runSimulation){
-		clothsim->update(1.0f / 30.0f);
+		clothsim->update(1.0f / 60.0f);
 	}
 
 	// get ping pong status
