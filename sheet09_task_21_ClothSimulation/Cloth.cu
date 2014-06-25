@@ -118,40 +118,37 @@ __global__ void test( float3* newPos, float3* oldPos, float h)
 __global__ void computeNormals(float3* pos, float3* normals)
 {
 	int myIndex = blockIdx.x * RESOLUTION_Y + blockIdx.y;
-	int up = blockIdx.y -1;
-	int down = blockIdx.y +1;
-	int left = blockIdx.x -1;
-	int right = blockIdx.x +1;
+	int up = int(blockIdx.y) -1;
+	int down = int(blockIdx.y) +1;
+	int left = int(blockIdx.x) -1;
+	int right = int(blockIdx.x) +1;
 
 	float3 upv = make_float3(0,0,0);
 	float3 downv = make_float3(0,0,0);
 	float3 leftv = make_float3(0,0,0);
 	float3 rightv = make_float3(0,0,0);
 
-	if(up < 0)
-	{
+	if(up < 0){
 		upv = -1 * pos[down]-pos[myIndex];
 	}
-	else
-	{
+	else{
 		upv = pos[up]-pos[myIndex];
 	}
-	if(down >= RESOLUTION_Y)
-	{
+
+	if(down >= RESOLUTION_Y){
 		downv = -1 * pos[up]-pos[myIndex];
 	}
-	else
-	{
+	else{
 		downv = pos[down]-pos[myIndex];
 	}
-	if(left < 0)
-	{
+
+	if(left < 0){
 		leftv = -1 * pos[right]-pos[myIndex];
 	}
-	else
-	{
+	else{
 		leftv = pos[left]-pos[myIndex];
 	}
+
 	if(right >= RESOLUTION_X)
 	{
 		rightv = -1 * pos[left] - pos[myIndex];
@@ -161,8 +158,8 @@ __global__ void computeNormals(float3* pos, float3* normals)
 		rightv = pos[right]-pos[myIndex];
 	}
 
-	float3 n1 = cross(upv, rightv);
-	float3 n2 = cross(downv, leftv);
+	float3 n1 = cross(rightv, upv);
+	float3 n2 = cross(leftv, downv);
 
 	normals[myIndex] = (n1+n2)/2;
 
