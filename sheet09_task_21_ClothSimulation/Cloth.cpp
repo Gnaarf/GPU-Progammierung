@@ -8,7 +8,7 @@
 #include <fstream>
 
 
-void updateCloth(	float3* newPos, float3* oldPos, float3* impacts, float3* velocity,					
+void updateCloth(	float3* newPos, float3* oldPos, float3* impacts, float3* velocity, float3* normals,					
 					float deltaTime, float stepsize);
 
 ClothSim::ClothSim() : ping(0)
@@ -49,6 +49,10 @@ ClothSim::ClothSim() : ping(0)
 	CUDA_SAFE_CALL(cudaGraphicsGLRegisterBuffer(&cudaPos[0],vboPos[0], cudaGraphicsRegisterFlagsNone));
 	CUDA_SAFE_CALL(cudaGraphicsGLRegisterBuffer(&cudaPos[1],vboPos[1], cudaGraphicsRegisterFlagsNone));
 	// TODO VBO vboNormal erzeugen und mit cudaNormal verknüpfen. Das VBO braucht keine initialen Daten (NULL übergeben).
+	glGenBuffers(1,&vboNormal);
+	glBindBuffer(GL_ARRAY_BUFFER, vboNormal);
+	glBufferData(GL_ARRAY_BUFFER, 3*RESOLUTION_X*RESOLUTION_Y*sizeof(float),NULL,GL_DYNAMIC_COPY);
+	CUDA_SAFE_CALL(cudaGraphicsGLRegisterBuffer(&cudaNormal,vboNormal, cudaGraphicsRegisterFlagsNone));
 	
 	delete[] m_hPos;
 }
@@ -60,6 +64,9 @@ ClothSim::~ClothSim()
 	// TODO cudaNormal freigeben
     glDeleteBuffers(2, (const GLuint*)vboPos);
 	// TODO vboNormal freigeben
+	CUDA_SAFE_CALL(cudaGraphicsUnregisterResource(cudaNormal));
+	glDeleteBuffers(1, (const GLuint*)vboNormal);
+
 	CUDA_SAFE_CALL( cudaFree( devPtrImpact ) ); 
 	CUDA_SAFE_CALL( cudaFree( devPtrVelocity ) ); 
 }
@@ -74,6 +81,7 @@ void ClothSim::update(GLfloat deltaTime)
 	// TODO: Map cudaPos (Hinweis: cudaGraphicsMapResources)
 	CUDA_SAFE_CALL(cudaGraphicsMapResources(2,cudaPos));
 	// TODO: Map cudaNormal
+	CUDA_SAFE_CALL(cudaGraphicsMapResources(1,&cudaNormal));
 	    
 	// TODO: Pointer auf die Daten von cudaPos[ping] und cudaPos[1-ping] beschaffen. (Hinweis: cudaGraphicsResourceGetMappedPointer)
 	void** posPing = NULL;
@@ -83,12 +91,13 @@ void ClothSim::update(GLfloat deltaTime)
 	CUDA_SAFE_CALL(cudaGraphicsResourceGetMappedPointer((void**)&newPos,posPingSize,cudaPos[ping]));
 	CUDA_SAFE_CALL(cudaGraphicsResourceGetMappedPointer((void**)&oldPos,posPongSize,cudaPos[1-ping]));
 	// TODO: Pointer auf die Daten von cudaNormal beschaffen.	
-
+	CUDA_SAFE_CALL(cudaGraphicsResourceGetMappedPointer((void**)&normals,NULL,cudaNormal));
 	// Launch update
 	float stepSize = 0.5f; // steers how quickly the iterative refinement converges	
-	updateCloth((float3*)newPos, (float3*)oldPos, (float3*)devPtrImpact, (float3*)devPtrVelocity, deltaTime, stepSize);
+	updateCloth((float3*)newPos, (float3*)oldPos, (float3*)devPtrImpact, (float3*)devPtrVelocity, (float3*)normals ,deltaTime, stepSize);
 
-	// TODO: Unmap cudaNormal	
+	// TODO: Unmap cudaNormal
+	CUDA_SAFE_CALL(cudaGraphicsUnmapResources(1,&cudaNormal));
 	// TODO: Unmap cudaPos (Hinweis: cudaGraphicsUnmapResources)	
 	CUDA_SAFE_CALL(cudaGraphicsUnmapResources(2,cudaPos));
 

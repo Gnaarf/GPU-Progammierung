@@ -19,7 +19,16 @@ __device__ float3 computeImpact(float3 me, float3 other, float stepsize, float h
 __device__ float3 sphereCollision(float3 p, float h)
 {
 	// TODO: Testen, ob Punkt im inneren der Kugel ist. Wenn ja, dann einen Impuls berechnen, der sie wieder heraus bewegt.
-	return p;
+	float centerDist = length(p);
+	if(centerDist < SPHERE_RADIUS+SKIN_WIDTH)
+	{
+		return (p)/h;
+	}
+	else
+	{
+		return make_float3(0,0,0);
+	}
+	//return p;
 }
 
 // -----------------------------------------------------------------------------------------------
@@ -37,6 +46,7 @@ __global__ void computeImpacts(float3* oldPos, float3* impacts, float stepsize, 
 	float3 impactsTmp = make_float3(0, 0, 0);
 
 	// TODO: Kollisionsbehandlung mit Kugel durchführen.
+	impacts[myIndex] += sphereCollision(oldPos[myIndex],h);
 
 	// TODO: Mit jedem Nachbar besteht ein Constraint. Dementsprechend für jeden Nachbar 
 	//		 computeImpact aufrufen und die Ergebnisse aufsummieren.
@@ -46,7 +56,7 @@ __global__ void computeImpacts(float3* oldPos, float3* impacts, float stepsize, 
 		float3 tmp = computeImpact(oldPos[myIndex], oldPos[upIdx],stepsize,h);
 		impactsTmp = impactsTmp + tmp;
 	}
-	if(down < RESOLUTION_Y-1)
+	if(down < RESOLUTION_Y)
 	{
 		int downIdx = blockIdx.x * RESOLUTION_Y + down;
 		float3 tmp = computeImpact(oldPos[myIndex], oldPos[downIdx],stepsize,h);
@@ -66,7 +76,11 @@ __global__ void computeImpacts(float3* oldPos, float3* impacts, float stepsize, 
 	}
 
 	// TODO: Die Summe der Impulse auf "impacts" des eigenen Gitterpunkts addieren.	
-	impacts[myIndex] = impacts[myIndex] + impactsTmp;
+	bool debug = !(impactsTmp.x == 0 && impactsTmp.y == 0 && impactsTmp.z == 0);
+	if(debug)
+	{
+		impacts[myIndex] = impacts[myIndex] + impactsTmp;
+	}
 }
 
 // -----------------------------------------------------------------------------------------------
@@ -101,12 +115,66 @@ __global__ void test( float3* newPos, float3* oldPos, float h)
 	newPos[blockIdx.x] = oldPos[blockIdx.x] + make_float3(0, -h, 0);
 }
 
+__global__ void computeNormals(float3* pos, float3* normals)
+{
+	int myIndex = blockIdx.x * RESOLUTION_Y + blockIdx.y;
+	int up = blockIdx.y -1;
+	int down = blockIdx.y +1;
+	int left = blockIdx.x -1;
+	int right = blockIdx.x +1;
+
+	float3 upv = make_float3(0,0,0);
+	float3 downv = make_float3(0,0,0);
+	float3 leftv = make_float3(0,0,0);
+	float3 rightv = make_float3(0,0,0);
+
+	if(up < 0)
+	{
+		upv = -1 * pos[down]-pos[myIndex];
+	}
+	else
+	{
+		upv = pos[up]-pos[myIndex];
+	}
+	if(down >= RESOLUTION_Y)
+	{
+		downv = -1 * pos[up]-pos[myIndex];
+	}
+	else
+	{
+		downv = pos[down]-pos[myIndex];
+	}
+	if(left < 0)
+	{
+		leftv = -1 * pos[right]-pos[myIndex];
+	}
+	else
+	{
+		leftv = pos[left]-pos[myIndex];
+	}
+	if(right >= RESOLUTION_X)
+	{
+		rightv = -1 * pos[left] - pos[myIndex];
+	}
+	else
+	{
+		rightv = pos[right]-pos[myIndex];
+	}
+
+	float3 n1 = cross(upv, rightv);
+	float3 n2 = cross(downv, leftv);
+
+	normals[myIndex] = (n1+n2)/2;
+
+}
+
 // -----------------------------------------------------------------------------------------------
-void updateCloth(	float3* newPos, float3* oldPos, float3* impacts, float3* velocity,					
+void updateCloth(	float3* newPos, float3* oldPos, float3* impacts, float3* velocity, float3* normals,					
 					float h, float stepsize)
 {
 	// dont move the row resY
 	dim3 blocks(RESOLUTION_X, RESOLUTION_Y-1, 1);
+	dim3 blockSIze(1,1);
 
 	// -----------------------------
 	// Clear impacts
@@ -128,7 +196,8 @@ void updateCloth(	float3* newPos, float3* oldPos, float3* impacts, float3* veloc
 
 	// -----------------------------
 	// TODO: Approximieren der Normalen
-	
+	computeNormals<<<blocks,1>>>(newPos, normals);
+
 	// -----------------------------
 	// TODO: Integrate velocity kernel ausführen
 	// Der kernel berechnet:  velocity = velocity * LINEAR_DAMPING + (impacts - (0,GRAVITY,0)) * h 	
