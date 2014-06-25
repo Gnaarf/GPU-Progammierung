@@ -20,6 +20,6 @@ void main()
 {
 	gl_Position = Projection * View * vec4(in_Position, 1);
 	out_TexCoord = in_TexCoord;
-	//vertexShaderOut_Normal = (View * vec4(vertexShaderIn_Normal, 1)).xyz;
-	vertexShaderOut_Normal = (inverse(transpose(View)) * vec4(vertexShaderIn_Normal,0)).xyz;
+	//vertexShaderOut_Normal = vertexShaderIn_Normal;
+	vertexShaderOut_Normal = (transpose(inverse(Projection*View)) * vec4(vertexShaderIn_Normal,0)).xyz;
 }

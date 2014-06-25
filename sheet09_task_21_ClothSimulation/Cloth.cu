@@ -40,10 +40,10 @@ __global__ void computeImpacts(float3* oldPos, float3* impacts, float stepsize, 
 	int pointX = blockIdx.x * blockDim.x + threadIdx.x;
 	int pointY = blockIdx.y * blockDim.y + threadIdx.y;
 	int myIndex = pointX * RESOLUTION_Y + pointY;
-	int up = blockIdx.y -1;
-	int down = blockIdx.y +1;
-	int left = blockIdx.x -1;
-	int right = blockIdx.x +1;
+	int up = pointY -1;
+	int down = pointY +1;
+	int left = pointX -1;
+	int right = pointX +1;
 
 	float3 impactsTmp = make_float3(0, 0, 0);
 
@@ -54,25 +54,25 @@ __global__ void computeImpacts(float3* oldPos, float3* impacts, float stepsize, 
 	//		 computeImpact aufrufen und die Ergebnisse aufsummieren.
 	if(up > 0)
 	{
-		int upIdx = blockIdx.x * RESOLUTION_Y + up;
+		int upIdx = pointX * RESOLUTION_Y + up;
 		float3 tmp = computeImpact(oldPos[myIndex], oldPos[upIdx],stepsize,h);
 		impactsTmp = impactsTmp + tmp;
 	}
 	if(down < RESOLUTION_Y)
 	{
-		int downIdx = blockIdx.x * RESOLUTION_Y + down;
+		int downIdx = pointX * RESOLUTION_Y + down;
 		float3 tmp = computeImpact(oldPos[myIndex], oldPos[downIdx],stepsize,h);
 		impactsTmp = impactsTmp + tmp;
 	}
 	if(left > 0)
 	{
-		int leftIdx = left * RESOLUTION_Y + blockIdx.y;
+		int leftIdx = left * RESOLUTION_Y + pointY;
 		float3 tmp = computeImpact(oldPos[myIndex], oldPos[leftIdx],stepsize,h);
 		impactsTmp = impactsTmp + tmp; 
 	}
 	if(right < RESOLUTION_X)
 	{
-		int rightIdx = right * RESOLUTION_Y + blockIdx.y;
+		int rightIdx = right * RESOLUTION_Y + pointY;
 		float3 tmp = computeImpact(oldPos[myIndex], oldPos[rightIdx],stepsize,h);
 		impactsTmp = impactsTmp + tmp;
 	}
@@ -127,10 +127,10 @@ __global__ void computeNormals(float3* pos, float3* normals)
 	int pointX = blockIdx.x * blockDim.x + threadIdx.x;
 	int pointY = blockIdx.y * blockDim.y + threadIdx.y;
 	int myIndex = pointX * RESOLUTION_Y + pointY;
-	int up = int(blockIdx.y) -1;
-	int down = int(blockIdx.y) +1;
-	int left = int(blockIdx.x) -1;
-	int right = int(blockIdx.x) +1;
+	int up = int(pointY) -1;
+	int down = int(pointY) +1;
+	int left = int(pointX) -1;
+	int right = int(pointX) +1;
 
 	float3 upv = make_float3(0,0,0);
 	float3 downv = make_float3(0,0,0);
@@ -138,39 +138,58 @@ __global__ void computeNormals(float3* pos, float3* normals)
 	float3 rightv = make_float3(0,0,0);
 
 	if(up < 0){
-		upv = -1 * pos[down]-pos[myIndex];
+		int downIdx = pointX*RESOLUTION_Y+down;
+		upv = -1 * pos[downIdx]-pos[myIndex];
 	}
 	else{
-		upv = pos[up]-pos[myIndex];
+		int upIdx = pointX*RESOLUTION_Y+up;
+		upv = pos[upIdx]-pos[myIndex];
 	}
 
 	if(down >= RESOLUTION_Y){
-		downv = -1 * pos[up]-pos[myIndex];
+		int upIdx = pointX*RESOLUTION_Y+up;
+		downv = -1 * pos[upIdx]-pos[myIndex];
 	}
 	else{
+		int downIdx = pointX*RESOLUTION_Y+down;
 		downv = pos[down]-pos[myIndex];
 	}
 
 	if(left < 0){
-		leftv = -1 * pos[right]-pos[myIndex];
+		int rightIdx = right*RESOLUTION_Y+pointY;
+		leftv = -1 * pos[rightIdx]-pos[myIndex];
 	}
 	else{
-		leftv = pos[left]-pos[myIndex];
+		int leftIdx = left*RESOLUTION_Y+pointY;
+		leftv = pos[leftIdx]-pos[myIndex];
 	}
 
 	if(right >= RESOLUTION_X)
 	{
-		rightv = -1 * pos[left] - pos[myIndex];
+		int leftIdx = left*RESOLUTION_Y+pointY;
+		rightv = -1 * pos[leftIdx] - pos[myIndex];
 	}
 	else
 	{
-		rightv = pos[right]-pos[myIndex];
+		int rightIdx = right*RESOLUTION_Y+pointY;
+		rightv = pos[rightIdx]-pos[myIndex];
 	}
 
 	float3 n1 = cross(rightv, upv);
 	float3 n2 = cross(leftv, downv);
 
-	normals[myIndex] = (n1+n2)/2;
+	/*float3 dsad = make_float3(0,1,0);
+
+	if(pointX == 63 && pointY == 63)
+	{
+		normals[myIndex] = dsad;
+	}
+	else
+	{
+		normals[myIndex] = make_float3(1,0,0);
+	}*/
+
+	normals[myIndex] = -1*(n1+n2)/2;
 
 }
 
@@ -179,8 +198,10 @@ void updateCloth(	float3* newPos, float3* oldPos, float3* impacts, float3* veloc
 					float h, float stepsize)
 {
 	// dont move the row resY
-	dim3 gridSize(1,1);
-	dim3 blockSIze(20, 20);
+	dim3 gridSize(RESOLUTION_X,RESOLUTION_Y-1);
+	dim3 blockSIze(1, 1);
+
+	dim3 normalGridSize(RESOLUTION_X,RESOLUTION_Y);
 
 	// -----------------------------
 	// Clear impacts
@@ -202,7 +223,7 @@ void updateCloth(	float3* newPos, float3* oldPos, float3* impacts, float3* veloc
 
 	// -----------------------------
 	// TODO: Approximieren der Normalen
-	computeNormals<<<gridSize,blockSIze>>>(newPos, normals);
+	computeNormals<<<normalGridSize,blockSIze>>>(newPos, normals);
 
 	// -----------------------------
 	// TODO: Integrate velocity kernel ausführen
