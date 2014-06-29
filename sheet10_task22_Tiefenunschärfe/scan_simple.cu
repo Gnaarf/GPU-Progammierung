@@ -24,7 +24,7 @@ GLfloat filteredPixels[N*N];
 float focusDepth = 0.5f;
 float sizeScale = 20.0f;
 
-float *devColorPixelsSrc, *devColorPixelsDst, *devDepthPixels;
+float *devColorPixelsSrc, *devColorPixelsDst, *devDepthPixels, *devSAT;
 
 void drawGround()
 {
@@ -111,6 +111,24 @@ void initGL()
 	glLoadIdentity();   
 }
 
+__device__ void clipFilterMask(int x, int y, int filterSize, int imageWidth, int imageHeight, int clipped[4])
+{
+	int top = y + filterSize;
+	int bottom = y - filterSize;
+	int left = x - filterSize;
+	int right = x + filterSize;
+
+	top = (top >= imageHeight) ? imageHeight-1 : top;
+	bottom = (bottom < 0) ? 0 : bottom;
+	left = (left < 0) ? 0 : left;
+	right = (right >= imageWidth) ? imageWidth-1 : right;
+
+	clipped[0] = top;
+	clipped[1] = bottom;
+	clipped[2] = left;
+	clipped[3] = right;
+}
+
 // image is a quadratic gayscaleImage 
 // Pxy lies in image[y*SIZE+x]
 __global__ void transposeQuadraticImage(float* image, float* image2, const int SIZE)
@@ -121,21 +139,35 @@ __global__ void transposeQuadraticImage(float* image, float* image2, const int S
 	int myIndex = posX*SIZE+posY;
 	int transposeIndex = posY*SIZE+posX;
 	float transPoseIntensity = image[transposeIndex];
-	__syncthreads();
+	//__syncthreads();
 
 	image2[myIndex] = transPoseIntensity;
 }
 
+// assumes one block = one row
 __global__ void sat_filter(float *dstImage, float *sat, float *srcDepth, 
 					   float focusDepth, float sizeScale, int n)
 {
+	int posY = blockIdx.x;
+	int posX = threadIdx.x;
+	int myIndex = posY * blockDim.x + posX;
 	// TODO: Filtergröße bestimmen
-
-	// TODO: Anzahl der Pixel im Filterkern bestimmen	
-
+	float filterSize = 1 + sizeScale * abs(srcDepth[myIndex]-focusDepth);
 	// TODO: SAT-Werte für die Eckpunkte des Filterkerns bestimmen.
-	
+	int filterBorders[4];
+	clipFilterMask(posX, posY, filterSize, N,N,filterBorders);
+	int top = filterBorders[0];
+	int bottom = filterBorders[1];
+	int left = filterBorders[2];
+	int right = filterBorders[3];
+	float satTL = sat[top * N + left];
+	float satTR = sat[top * N + right];
+	float satBL = sat[bottom * N + left];
+	float satBR = sat[bottom * N + right];
+	// TODO: Anzahl der Pixel im Filterkern bestimmen	
+	float filterNumPixels = (top - bottom) * (left - right);
 	// TODO: Mittelwert berechnen.
+	dstImage[myIndex] = (satTR - satTL - satBR + satBL)/filterNumPixels;
 }
 
 
@@ -176,6 +208,7 @@ void initCUDA()
     cudaMalloc( (void**)&devColorPixelsSrc, N * N * sizeof(float) );
     cudaMalloc( (void**)&devColorPixelsDst, N * N * sizeof(float) );
     cudaMalloc( (void**)&devDepthPixels, N * N * sizeof(float) );
+	cudaMalloc( (void**)&devSAT, N*N * sizeof(float) );
 }
 
 void special(int key, int x, int y)
@@ -232,11 +265,15 @@ void display(void)
 	dim3 blockSize(16,16);
 
 	// TODO: Scan    
+	scan_naive<<<N,N>>>(devColorPixelsSrc,devColorPixelsDst,N);
 	// TODO: Transponieren 
-	transposeQuadraticImage<<<gridSize,blockSize>>>(devColorPixelsSrc,devColorPixelsDst,N);
-	// TODO: Scan  
-	// TODO: Transponieren    
-	// TODO: SAT-Filter anwenden	
+	transposeQuadraticImage<<<gridSize,blockSize>>>(devColorPixelsDst,devSAT,N);
+	// TODO: Scan
+	scan_naive<<<N,N>>>(devSAT,devColorPixelsDst,N);
+	// TODO: Transponieren   
+	transposeQuadraticImage<<<gridSize,blockSize>>>(devColorPixelsDst,devSAT,N);
+	// TODO: SAT-Filter anwenden
+	sat_filter<<<N,N>>>(devColorPixelsDst, devSAT, devDepthPixels, focusDepth, sizeScale, N);
 
 	// Ergebnis in Host-Memory kopieren
 	cudaMemcpy( filteredPixels, devColorPixelsDst, N*N*4, cudaMemcpyDeviceToHost );
