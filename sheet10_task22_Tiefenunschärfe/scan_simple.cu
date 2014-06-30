@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include "cuda.h"
+#include "common.h"
 #include <GL/glut.h>
 
 #define N 512
@@ -165,7 +166,7 @@ __global__ void sat_filter(float *dstImage, float *sat, float *srcDepth,
 	float satBL = sat[bottom * N + left];
 	float satBR = sat[bottom * N + right];
 	// TODO: Anzahl der Pixel im Filterkern bestimmen	
-	float filterNumPixels = (top - bottom) * (left - right);
+	float filterNumPixels = (top - bottom) * (right - left);
 	// TODO: Mittelwert berechnen.
 	dstImage[myIndex] = (satTR - satTL - satBR + satBL)/filterNumPixels;
 }
@@ -205,10 +206,18 @@ __global__ void scan_naive(float *g_odata, float *g_idata, int n)
 
 void initCUDA()
 {
-    cudaMalloc( (void**)&devColorPixelsSrc, N * N * sizeof(float) );
-    cudaMalloc( (void**)&devColorPixelsDst, N * N * sizeof(float) );
-    cudaMalloc( (void**)&devDepthPixels, N * N * sizeof(float) );
-	cudaMalloc( (void**)&devSAT, N*N * sizeof(float) );
+    CUDA_SAFE_CALL(cudaMalloc( (void**)&devColorPixelsSrc, N * N * sizeof(float) ));
+    CUDA_SAFE_CALL(cudaMalloc( (void**)&devColorPixelsDst, N * N * sizeof(float) ));
+    CUDA_SAFE_CALL(cudaMalloc( (void**)&devDepthPixels, N * N * sizeof(float) ));
+	CUDA_SAFE_CALL(cudaMalloc( (void**)&devSAT, N*N * sizeof(float) ));
+}
+
+void cleanCUDA()
+{
+	cudaFree( devColorPixelsSrc );
+    cudaFree( devColorPixelsDst );
+    cudaFree( devDepthPixels );
+	cudaFree( devSAT );
 }
 
 void special(int key, int x, int y)
@@ -242,6 +251,15 @@ void special(int key, int x, int y)
 	}
 }
 
+__global__ void normalizeArray(float* p_array, int SIZE)
+{
+	int myIndex = blockIdx.x * blockDim.x + threadIdx.x;
+	if(p_array[SIZE] != 0)
+	{
+		p_array[myIndex] = p_array[myIndex]/p_array[SIZE]; 
+	}
+}
+
 void display(void)								
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -256,30 +274,40 @@ void display(void)
     // Tiefe und Farbe in den RAM streamen.
     glReadPixels( 0, 0, N, N, GL_DEPTH_COMPONENT, GL_FLOAT, depthPixels);	
     glReadPixels( 0, 0, N, N, GL_LUMINANCE, GL_FLOAT, colorPixels);	
-	
+
     // Beide arrays in den Device-Memory kopieren.
-    cudaMemcpy( devColorPixelsSrc, colorPixels, N * N * sizeof(float), cudaMemcpyHostToDevice );
+    cudaMemcpy( devColorPixelsSrc, colorPixels, N * N * sizeof(GLfloat), cudaMemcpyHostToDevice );
     cudaMemcpy( devDepthPixels, depthPixels, N * N * sizeof(float), cudaMemcpyHostToDevice );
 
 	dim3 gridSize(32,32);
 	dim3 blockSize(16,16);
 
 	// TODO: Scan    
-	scan_naive<<<N,N>>>(devColorPixelsSrc,devColorPixelsDst,N);
+	scan_naive<<<N,N>>>(devColorPixelsDst,devColorPixelsSrc,N);
 	// TODO: Transponieren 
 	transposeQuadraticImage<<<gridSize,blockSize>>>(devColorPixelsDst,devSAT,N);
 	// TODO: Scan
-	scan_naive<<<N,N>>>(devSAT,devColorPixelsDst,N);
+	scan_naive<<<N,N>>>(devColorPixelsDst,devSAT,N);
 	// TODO: Transponieren   
 	transposeQuadraticImage<<<gridSize,blockSize>>>(devColorPixelsDst,devSAT,N);
 	// TODO: SAT-Filter anwenden
 	sat_filter<<<N,N>>>(devColorPixelsDst, devSAT, devDepthPixels, focusDepth, sizeScale, N);
 
+	//normalizeArray<<<N,N>>>(devSAT,N*N);
 	// Ergebnis in Host-Memory kopieren
 	cudaMemcpy( filteredPixels, devColorPixelsDst, N*N*4, cudaMemcpyDeviceToHost );
 
 	// TODO: Beim #if aus der 0 eine 1 machen, damit das gefilterte Bild angezeigt wird!
 #if 1
+	/*if(filteredPixels[N*N-1] != 0)
+	{
+		for(int i = 0; i < N*N; i++)
+		{
+			filteredPixels[i] /= filteredPixels[N*N-1];
+		}
+	}*/
+	
+	
 	// Mittelwert-Bild rendern
 	glDrawPixels( N, N, GL_LUMINANCE, GL_FLOAT, filteredPixels );
 #else
@@ -308,6 +336,8 @@ int main(int argc, char **argv)
 	initCUDA();
 
 	glutMainLoop();
+
+	cleanCUDA();
 
 	return 0;
 }
